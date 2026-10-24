@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ludo With Friends</string>
+    <string name="title_activity_main">Ludo With Friends</string>
+    <string name="package_name">in.ludolite.app</string>
+    <string name="custom_url_scheme">in.ludolite.app</string>
+</resources>

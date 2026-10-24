@@ -40,10 +40,15 @@ packages/shared    Wire contracts imported by the server and both clients.
 apps/server        Express + Socket.IO + Prisma. Owns all game and money state.
 apps/web           React PWA. Also the Android app, via Capacitor.
 docs/COMPLIANCE.md The legal and provider gate. Read before touching payments.
+docs/SHIP.md       Deploy to Render, then build the Android app.
 docs/RUNNING.md    Local setup and troubleshooting.
-docs/ANDROID.md    Play Store release process.
+docs/ANDROID.md    Play Store release details.
 docs/OPERATIONS.md Running it in production.
 ```
+
+In production the Node service serves the API, the websockets, **and** the
+web client from one origin — so there is no CORS to configure, no proxy
+between services, and nothing to rewire after the first deploy.
 
 The engine is shared so the client can predict and highlight legal moves,
 while the server stays the only authority on what actually happened.
