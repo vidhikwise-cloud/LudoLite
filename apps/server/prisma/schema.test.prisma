@@ -1,0 +1,211 @@
+// SQLite mirror of schema.prisma, used ONLY by the automated test suite.
+//
+// Why a second file: Prisma pins the datasource provider at generate time, and
+// the test machine has no Postgres. SQLite needs no server, so the suite runs
+// anywhere — including CI — and still exercises real SQL, real transactions,
+// and the real unique constraints that enforce the "charged at most once"
+// invariant. Mocking the database would have tested nothing worth testing.
+//
+// Differences from the production schema, all forced by SQLite:
+//   * enums become String (SQLite has no enum type)
+//   * Json columns become String (callers JSON.stringify/parse)
+// The field names, relations, and every @unique and @@unique are identical,
+// which is what the payment tests depend on.
+//
+// Keep in step with schema.prisma. `npm test` fails loudly if a model drifts.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/test-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("TEST_DATABASE_URL")
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  displayName String
+  deviceKey   String   @unique
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  hostedRooms  Room[]           @relation("RoomHost")
+  memberships  RoomMembership[]
+  transactions Transaction[]
+
+  @@index([lastSeenAt])
+}
+
+model Room {
+  id        String @id @default(cuid())
+  code      String @unique
+  status    String @default("active")
+  funding   String @default("free")
+  seatCount Int    @default(4)
+
+  hostPlayerId String
+  host         Player @relation("RoomHost", fields: [hostPlayerId], references: [id])
+
+  quotedFeePaise Int    @default(0)
+  currency       String @default("INR")
+
+  consentAcceptedTerms       Boolean?
+  consentAcknowledgedNoPrize Boolean?
+  consentDisplayedPaise      Int?
+  consentAt                  DateTime?
+
+  createdAt   DateTime  @default(now())
+  activatedAt DateTime?
+  startedAt   DateTime?
+  endedAt     DateTime?
+  cancelledAt DateTime?
+
+  memberships  RoomMembership[]
+  transactions Transaction[]
+  match        Match?
+
+  @@index([status])
+  @@index([hostPlayerId])
+  @@index([createdAt])
+}
+
+model RoomMembership {
+  id        String    @id @default(cuid())
+  roomId    String
+  playerId  String
+  seat      Int
+  isHost    Boolean   @default(false)
+  connected Boolean   @default(false)
+  joinedAt  DateTime  @default(now())
+  leftAt    DateTime?
+
+  isBot    Boolean @default(false)
+  botLevel String?
+
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([roomId, playerId])
+  @@unique([roomId, seat])
+  @@index([playerId])
+}
+
+model Match {
+  id     String @id @default(cuid())
+  roomId String @unique
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  seatCount Int
+  state     String
+  version   Int    @default(0)
+
+  winnerSeat     Int?
+  winnerPlayerId String?
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  events MatchEvent[]
+
+  @@index([endedAt])
+}
+
+model MatchEvent {
+  id      String   @id @default(cuid())
+  matchId String
+  match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  seq     Int
+  type    String
+  payload String
+  at      DateTime @default(now())
+
+  @@unique([matchId, seq])
+  @@index([matchId])
+}
+
+model Transaction {
+  id       String @id @default(cuid())
+  roomId   String
+  room     Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id])
+
+  status      String @default("created")
+  amountPaise Int
+  currency    String @default("INR")
+
+  provider          String
+  providerOrderId   String? @unique
+  providerPaymentId String? @unique
+  testMode          Boolean @default(true)
+
+  idempotencyKey String @unique
+
+  verificationPayload String?
+  verifiedAt          DateTime?
+  failureReason       String?
+
+  refundId          String?
+  refundedAt        DateTime?
+  refundAmountPaise Int?
+  refundReason      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  webhookEvents WebhookEvent[]
+
+  @@index([roomId])
+  @@index([playerId])
+  @@index([status])
+}
+
+model WebhookEvent {
+  id              String       @id @default(cuid())
+  provider        String
+  providerEventId String
+  eventType       String
+  signatureValid  Boolean
+  payload         String
+  transactionId   String?
+  transaction     Transaction? @relation(fields: [transactionId], references: [id])
+  processedAt     DateTime?
+  receivedAt      DateTime     @default(now())
+
+  @@unique([provider, providerEventId])
+  @@index([transactionId])
+}
+
+model ComplianceApproval {
+  id     String @id
+  status String @default("not_started")
+
+  approvedBy   String?
+  evidenceRef  String?
+  evidenceNote String?
+  providerName String?
+  approvedAt   DateTime?
+  reviewedAt   DateTime?
+  expiresAt    DateTime?
+
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  actorType   String
+  actorId     String?
+  subjectType String?
+  subjectId   String?
+  detail      String
+  ip          String?
+  userAgent   String?
+  at          DateTime @default(now())
+
+  @@index([action])
+  @@index([subjectType, subjectId])
+  @@index([at])
+}

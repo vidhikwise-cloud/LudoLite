@@ -1,0 +1,36 @@
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+.env
+.env.local
+.env.*.local
+!.env.example
+
+apps/server/prisma/dev.db
+apps/server/prisma/dev.db-journal
+*.sqlite
+*.sqlite3
+
+apps/web/dev-dist/
+apps/web/android/app/build/
+apps/web/android/build/
+apps/web/android/.gradle/
+apps/web/android/local.properties
+apps/web/android/app/src/main/assets/public/
+
+# Android signing. Losing these means losing the ability to update the app;
+# committing them means anyone can publish as you. Never commit either.
+*.jks
+*.keystore
+keystore.properties
+**/keystore.properties
+*.aab
+*.apk
+
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

@@ -1,0 +1,298 @@
+// Ludo With Friends — data model.
+//
+// Design notes that matter for compliance:
+//
+//  * Money is stored in paise as integers. Never floats.
+//  * A Room cannot be `active` with funding `paid` unless a Transaction in
+//    status `verified` points at it. Enforced in code and asserted in tests.
+//  * ComplianceApproval is the database half of the payment gate. The env
+//    flag alone cannot open it.
+//  * AuditLog is append-only by convention: the application never updates or
+//    deletes rows.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Players
+// ---------------------------------------------------------------------------
+
+model Player {
+  id          String   @id @default(cuid())
+  displayName String
+  // Stable device/browser identity so a returning host is recognised and is
+  // never asked to pay twice for a room they already funded.
+  deviceKey   String   @unique
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  hostedRooms  Room[]            @relation("RoomHost")
+  memberships  RoomMembership[]
+  transactions Transaction[]
+
+  @@index([lastSeenAt])
+}
+
+// ---------------------------------------------------------------------------
+// Rooms
+// ---------------------------------------------------------------------------
+
+enum RoomStatus {
+  pending_payment
+  active
+  in_play
+  complete
+  cancelled
+}
+
+enum RoomFunding {
+  free
+  paid
+}
+
+model Room {
+  id        String      @id @default(cuid())
+  // Short human-readable invite code, e.g. "7X2K". Unique among live rooms.
+  code      String      @unique
+  status    RoomStatus  @default(active)
+  funding   RoomFunding @default(free)
+  seatCount Int         @default(4)
+
+  hostPlayerId String
+  host         Player @relation("RoomHost", fields: [hostPlayerId], references: [id])
+
+  // Fee quoted to the host at creation, in paise. Zero for a free room.
+  // Stored so a later fee change cannot retroactively alter what was agreed.
+  quotedFeePaise Int    @default(0)
+  currency       String @default("INR")
+
+  // Consent captured before payment. Null for free rooms.
+  consentAcceptedTerms       Boolean?
+  consentAcknowledgedNoPrize Boolean?
+  consentDisplayedPaise      Int?
+  consentAt                  DateTime?
+
+  createdAt   DateTime  @default(now())
+  activatedAt DateTime?
+  startedAt   DateTime?
+  endedAt     DateTime?
+  cancelledAt DateTime?
+
+  memberships  RoomMembership[]
+  transactions Transaction[]
+  match        Match?
+
+  @@index([status])
+  @@index([hostPlayerId])
+  @@index([createdAt])
+}
+
+model RoomMembership {
+  id       String   @id @default(cuid())
+  roomId   String
+  playerId String
+  seat     Int
+  isHost   Boolean  @default(false)
+  // Always false for non-host players. They join at no charge, by design.
+  connected Boolean @default(false)
+  joinedAt  DateTime @default(now())
+  leftAt    DateTime?
+
+  // Computer opponent. The server plays this seat; no client ever connects
+  // as it, and a bot is never charged for anything.
+  isBot    Boolean @default(false)
+  botLevel String? // 'easy' | 'normal' | 'hard'
+
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([roomId, playerId])
+  @@unique([roomId, seat])
+  @@index([playerId])
+}
+
+// ---------------------------------------------------------------------------
+// Matches
+// ---------------------------------------------------------------------------
+
+model Match {
+  id     String @id @default(cuid())
+  roomId String @unique
+  room   Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  seatCount Int
+  // Serialized MatchState from @ludolite/engine. The server is authoritative;
+  // this is the only copy that counts.
+  state     Json
+  version   Int    @default(0)
+
+  winnerSeat     Int?
+  winnerPlayerId String?
+
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  events MatchEvent[]
+
+  @@index([endedAt])
+}
+
+// Append-only log of every server-authoritative action, enough to replay a
+// match and settle any dispute about a dice roll.
+model MatchEvent {
+  id      String   @id @default(cuid())
+  matchId String
+  match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  seq     Int
+  type    String // 'roll' | 'move' | 'forfeit' | 'start' | 'end'
+  payload Json
+  at      DateTime @default(now())
+
+  @@unique([matchId, seq])
+  @@index([matchId])
+}
+
+// ---------------------------------------------------------------------------
+// Payments
+// ---------------------------------------------------------------------------
+
+enum TransactionStatus {
+  created
+  pending
+  verified
+  failed
+  refunded
+  cancelled
+}
+
+model Transaction {
+  id       String @id @default(cuid())
+  roomId   String
+  room     Room   @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  playerId String
+  player   Player @relation(fields: [playerId], references: [id])
+
+  status      TransactionStatus @default(created)
+  amountPaise Int
+  currency    String            @default("INR")
+
+  provider        String // 'mock' | 'sandbox:<name>' | 'none'
+  providerOrderId String?  @unique
+  providerPaymentId String? @unique
+  // True whenever this did not move real money. Surfaced in the UI.
+  testMode        Boolean @default(true)
+
+  // Idempotency key scoped to (room, player, purpose). A retry, a double-tap,
+  // or a reconnect reuses this key and gets the original transaction back
+  // instead of creating a second charge.
+  idempotencyKey String @unique
+
+  // Raw signed webhook payload, retained as evidence of verification.
+  verificationPayload Json?
+  verifiedAt          DateTime?
+  failureReason       String?
+
+  refundId          String?
+  refundedAt        DateTime?
+  refundAmountPaise Int?
+  refundReason      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  webhookEvents WebhookEvent[]
+
+  @@index([roomId])
+  @@index([playerId])
+  @@index([status])
+}
+
+// Every webhook the provider sends, stored before it is acted on. The unique
+// constraint on providerEventId makes replayed deliveries harmless.
+model WebhookEvent {
+  id              String   @id @default(cuid())
+  provider        String
+  providerEventId String
+  eventType       String
+  signatureValid  Boolean
+  payload         Json
+  transactionId   String?
+  transaction     Transaction? @relation(fields: [transactionId], references: [id])
+  processedAt     DateTime?
+  receivedAt      DateTime @default(now())
+
+  @@unique([provider, providerEventId])
+  @@index([transactionId])
+}
+
+// ---------------------------------------------------------------------------
+// Compliance gate
+// ---------------------------------------------------------------------------
+
+enum ApprovalKind {
+  legal_opinion
+  payment_provider
+}
+
+enum ApprovalStatus {
+  not_started
+  in_review
+  approved
+  denied
+}
+
+// The database half of the paid-hosting gate.
+//
+// Paid hosting requires BOTH kinds in status `approved`, with an evidence
+// reference recorded, in addition to PAID_ROOM_HOSTING_ENABLED=true. Rows are
+// seeded as `not_started` and are expected to be updated by hand by the
+// product owner once written evidence exists — deliberately not something the
+// application can grant itself.
+model ComplianceApproval {
+  id     ApprovalKind   @id
+  status ApprovalStatus @default(not_started)
+
+  // Who gave it, and where the written evidence lives. Both are required
+  // before the gate will open.
+  approvedBy       String?
+  evidenceRef      String?
+  evidenceNote     String?
+  // Provider name this approval covers, so an approval for one provider
+  // cannot be silently reused for another.
+  providerName     String?
+  approvedAt       DateTime?
+  reviewedAt       DateTime?
+  expiresAt        DateTime?
+
+  updatedAt DateTime @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// Audit
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  // Dotted action name, e.g. 'room.created', 'payment.verified',
+  // 'gate.denied', 'refund.issued'.
+  action    String
+  actorType String // 'player' | 'system' | 'admin' | 'provider'
+  actorId   String?
+  subjectType String? // 'room' | 'transaction' | 'match'
+  subjectId   String?
+  // Structured detail. Must never contain provider secrets or signatures.
+  detail    Json
+  ip        String?
+  userAgent String?
+  at        DateTime @default(now())
+
+  @@index([action])
+  @@index([subjectType, subjectId])
+  @@index([at])
+}

@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Cancel superseded runs on the same branch rather than queueing them.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Generate Prisma clients
+        run: |
+          npx prisma generate --schema apps/server/prisma/schema.prisma
+          npx prisma generate --schema apps/server/prisma/schema.test.prisma
+        env:
+          DATABASE_URL: postgresql://unused:unused@localhost:5432/unused
+          TEST_DATABASE_URL: file:./ci.db
+
+      - name: Build shared packages
+        run: |
+          npx tsc -p packages/engine/tsconfig.json
+          npx tsc -p packages/shared/tsconfig.json
+
+      - name: Typecheck
+        run: |
+          npx tsc -p apps/server/tsconfig.json --noEmit
+          npx tsc -p apps/web/tsconfig.json --noEmit
+
+      - name: Test
+        run: |
+          npm test --workspace packages/engine
+          npm test --workspace apps/server
+          npm test --workspace apps/web
+        env:
+          TEST_DATABASE_URL: file:./ci.db
+
+      - name: Build
+        run: |
+          npx tsc -p apps/server/tsconfig.json
+          npm run build --workspace apps/web
+
+  # The paid-hosting gate must stay shut on every commit. This is a guard
+  # against someone flipping the default in a hurry and nobody noticing.
+  gate:
+    name: Paid hosting stays disabled
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: .env.example keeps the flag off
+        run: |
+          grep -q '^PAID_ROOM_HOSTING_ENABLED=false' .env.example \
+            || { echo "::error::PAID_ROOM_HOSTING_ENABLED must default to false"; exit 1; }
+          grep -q '^PAYMENT_PROVIDER=none' .env.example \
+            || { echo "::error::PAYMENT_PROVIDER must default to none"; exit 1; }
+
+      - name: Deploy config keeps the flag off
+        run: |
+          grep -A1 'PAID_ROOM_HOSTING_ENABLED' render.yaml | grep -q 'value: false' \
+            || { echo "::error::render.yaml must keep paid hosting disabled"; exit 1; }
+
+      - name: Seed never grants approval
+        run: |
+          if grep -E "status:\s*'approved'" apps/server/prisma/seed.ts; then
+            echo "::error::the seed script must never grant an approval"
+            exit 1
+          fi
+
+      - name: No production payment adapter is wired up
+        run: |
+          if grep -rniE "razorpay|stripe|payu|cashfree" \
+               --include=*.ts apps/server/src | grep -v "^.*://" | grep -viE "must not|not be used|restrict|comment|never"; then
+            echo "::error::a payment provider SDK appears to be wired in — see docs/COMPLIANCE.md"
+            exit 1
+          fi
+
+  security:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # Production dependencies must be clean. Dev-only advisories are
+      # reported but do not fail the build.
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=moderate
+
+      - name: Audit all dependencies (informational)
+        run: npm audit || true

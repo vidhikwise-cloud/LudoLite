@@ -1,0 +1,100 @@
+# Render blueprint.
+#
+# ONE web service plus a Postgres database. The Node service serves both the
+# API and the built web client from the same origin, which means:
+#
+#   * no CORS to configure
+#   * no proxy rules between two services
+#   * no cross-service hostname to hardcode (Render's blueprint spec has no
+#     documented way to interpolate another service's public URL into a
+#     static-site rewrite, so a two-service split would need a manual edit
+#     after every first deploy)
+#   * websockets work without special routing
+#
+# To deploy:
+#   1. Push this repo to GitHub.
+#   2. Render dashboard -> New -> Blueprint -> pick the repo -> Apply.
+#   3. Wait for the first deploy. The URL it gives you IS the app.
+#
+# PAID HOSTING STAYS DISABLED. The flag is pinned to false below, and even
+# setting it to true would not open the gate without the two approval records
+# in the database. See docs/COMPLIANCE.md.
+
+databases:
+  - name: ludo-db
+    databaseName: ludo
+    user: ludo
+    # The free tier expires after 30 days and then deletes the database.
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: ludo
+    runtime: node
+    # Websockets need an always-on instance. The free tier sleeps, and a
+    # sleeping server drops every live match.
+    plan: starter
+    region: singapore        # closest Render region to India
+    branch: main
+
+    buildCommand: |
+      npm ci
+      npx prisma generate --schema apps/server/prisma/schema.prisma
+      npx tsc -p packages/engine/tsconfig.json
+      npx tsc -p packages/shared/tsconfig.json
+      npx tsc -p apps/server/tsconfig.json
+      npm run build --workspace apps/web
+
+    # Migrations run before the new version takes traffic, so a deploy either
+    # has the right schema or fails outright rather than serving against an
+    # old one. Seeding is idempotent and never grants an approval.
+    preDeployCommand: |
+      npm run db:deploy --workspace apps/server
+      npm run db:seed --workspace apps/server
+
+    startCommand: node apps/server/dist/main.js
+
+    # Readiness, not liveness: Render should route traffic only when the
+    # database is reachable, and stop routing during a drain.
+    healthCheckPath: /ready
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 4000
+      - key: LOG_LEVEL
+        value: info
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ludo-db
+          property: connectionString
+
+      - key: SESSION_SECRET
+        generateValue: true          # Render generates and stores it
+
+      # Empty means same-origin only, which is correct here because this one
+      # service serves both the app and the API.
+      #
+      # When you ship the Android app, set this to `https://localhost` in the
+      # Render dashboard — the Capacitor webview loads from that origin and
+      # therefore calls the API cross-origin.
+      - key: CORS_ORIGINS
+        value: ''
+
+      # --- the gate ---------------------------------------------------------
+      # Do not change these without reading docs/COMPLIANCE.md. Setting the
+      # flag to true alone does NOT enable payments; the two approval records
+      # are also required. Pinned here so a dashboard edit is deliberate.
+      - key: PAID_ROOM_HOSTING_ENABLED
+        value: false
+      - key: PAYMENT_PROVIDER
+        value: none
+      - key: HOSTING_FEE_PAISE
+        value: 100
+      - key: CURRENCY
+        value: INR
+      - key: REFUND_WINDOW_MINUTES
+        value: 60
