@@ -31,6 +31,9 @@ databases:
 services:
   - type: web
     name: ludo
+    # `node`, not `docker`: a repo with a Dockerfile would otherwise be
+    # auto-detected as a Docker service, which skips preDeployCommand and so
+    # never runs the migrations.
     runtime: node
     # Websockets need an always-on instance. The free tier sleeps, and a
     # sleeping server drops every live match.

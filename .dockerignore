@@ -19,7 +19,10 @@ apps/web/android
 apps/web/dev-dist
 apps/web/dist
 
-scripts
+# The PowerShell helper scripts at the repo root are for a developer's
+# machine, not the image. Anchored with a leading slash so this does NOT
+# also match apps/server/dist/scripts, which the entrypoint needs.
+/scripts
 docs
 *.md
 !README.md

@@ -36,7 +36,8 @@ COPY . .
 RUN npx prisma generate --schema apps/server/prisma/schema.prisma \
  && npx tsc -p packages/engine/tsconfig.json \
  && npx tsc -p packages/shared/tsconfig.json \
- && npx tsc -p apps/server/tsconfig.json
+ && npx tsc -p apps/server/tsconfig.json \
+ && npm run build --workspace apps/web
 
 # Drop dev dependencies from the tree we are about to copy forward.
 RUN npm prune --omit=dev
@@ -66,16 +67,29 @@ COPY --from=build --chown=ludo:ludo /app/packages/shared/package.json ./packages
 COPY --from=build --chown=ludo:ludo /app/apps/server/dist      ./apps/server/dist
 COPY --from=build --chown=ludo:ludo /app/apps/server/package.json ./apps/server/
 COPY --from=build --chown=ludo:ludo /app/apps/server/prisma    ./apps/server/prisma
+# The built web client. One service serves the app and the API from the same
+# origin, so this is not optional — without it the container answers API
+# calls but has no app to show.
+COPY --from=build --chown=ludo:ludo /app/apps/web/dist         ./apps/web/dist
 COPY --from=build --chown=ludo:ludo /app/package.json          ./
+COPY --chown=ludo:ludo docker-entrypoint.sh                    ./
+
+RUN chmod +x docker-entrypoint.sh
 
 USER ludo
 EXPOSE 4000
+
+# The HEALTHCHECK's own CMD is a sub-clause of that instruction, not the
+# container's command; it is placed first so the real CMD below reads
+# unambiguously as the entrypoint's argument.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # tini reaps zombies and, more importantly here, forwards SIGTERM properly so
 # the graceful drain in main.ts actually runs on deploy.
 ENTRYPOINT ["/sbin/tini", "--"]
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||4000)+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-
-CMD ["node", "apps/server/dist/main.js"]
+# Migrations run at startup rather than in the image build, because the
+# database is only reachable at runtime. The entrypoint refuses to start the
+# server if they fail, so a container never serves against an old schema.
+CMD ["./docker-entrypoint.sh"]

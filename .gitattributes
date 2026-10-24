@@ -1,0 +1,21 @@
+# Shell scripts must keep LF endings.
+#
+# On Windows, git's autocrlf would otherwise check these out with CRLF, and a
+# Linux container then fails with a confusing "no such file or directory"
+# because the shebang line ends in a stray carriage return.
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+gradlew text eol=lf
+
+# Windows-only helpers keep CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Treat these as binary so git never rewrites them.
+*.png binary
+*.jpg binary
+*.jks binary
+*.keystore binary
+*.aab binary
+*.apk binary
