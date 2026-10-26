@@ -38,8 +38,8 @@ function DraftBanner() {
 export function Legal({ page, onBack }: { page: LegalPage; onBack: () => void }) {
   return (
     <div className="legal">
-      <button type="button" className="btn-link" onClick={onBack}>
-        ← Back
+      <button type="button" className="backbtn" onClick={onBack} aria-label="Go back">
+        <span aria-hidden="true">←</span>
       </button>
 
       {page === 'privacy' ? <Privacy /> : null}
@@ -161,7 +161,7 @@ function Terms() {
 
       <h3>What this is</h3>
       <p>
-        Ludo With Friends lets you create a private room and play Ludo with people
+        LudoLite lets you create a private room and play Ludo with people
         you invite. It is a social game played for entertainment.
       </p>
 

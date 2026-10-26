@@ -18,7 +18,7 @@ export function BrandBar({ children }: { children?: React.ReactNode }) {
   return (
     <div className="brandbar">
       <LudoMark />
-      <b>Ludo With Friends</b>
+      <b>LudoLite</b>
       {children ? <span className="spacer">{children}</span> : null}
     </div>
   );

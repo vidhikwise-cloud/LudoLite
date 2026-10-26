@@ -1,5 +1,5 @@
 /*
- * Ludo With Friends.
+ * LudoLite.
  *
  * LIGHT ONLY. The dark scheme is deliberately not implemented: a dark board
  * game reads as a betting app to adults and as drab to children, and this
@@ -1748,6 +1748,138 @@ body {
   padding-top: 16px;
 }
 
+/*
+ * Back.
+ *
+ * A circular icon button matching the top bar's controls, not an
+ * underlined text link: back is the most-used control on every secondary
+ * screen and it deserves a real tap target. Self-aligned so it sits left
+ * without needing a wrapper on each screen.
+ */
+.backbtn {
+  align-self: flex-start;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  cursor: pointer;
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease-out);
+}
+
+.backbtn:hover {
+  transform: translateX(-2px);
+  box-shadow: var(--lift-2);
+}
+
+.backbtn:active {
+  transform: scale(0.94);
+}
+
+.backbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+/* ==========================================================================
+ * Top bar
+ *
+ * Brand left, controls right, both vertically centred on one row. The old
+ * version let the mute button and the profile chip stack and drift because
+ * they were pushed out by a generic spacer rather than placed.
+ * ========================================================================== */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.topbar-brand b {
+  font: 800 19px/1 var(--display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+/* Both controls are the same 42px circle, so the row reads as a pair
+   instead of two unrelated widgets. */
+.topbar-actions .mute,
+.avatarbtn {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  cursor: pointer;
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease-out);
+}
+
+.topbar-actions .mute:hover,
+.avatarbtn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--lift-2);
+}
+
+.topbar-actions .mute:active,
+.avatarbtn:active {
+  transform: scale(0.94);
+}
+
+.avatarbtn {
+  position: relative;
+  overflow: visible;
+  background: var(--paper-2);
+}
+
+.avatarbtn-face {
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* The level rides as a badge on the corner rather than sitting beside the
+   face, which keeps the control a clean circle. */
+.avatarbtn-lvl {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font: 800 11px/1 var(--body);
+  color: #fff;
+  background: var(--xp);
+  border: 2px solid var(--paper);
+}
+
 /* ==========================================================================
  * Landing hero
  *
@@ -1842,6 +1974,48 @@ body {
 
 .stage > .stage-inner {
   position: relative;
+}
+
+/* The player's own character, centre stage. */
+.stage-buddy {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+  animation: buddyEnter 620ms var(--ease) both;
+}
+
+@keyframes buddyEnter {
+  0% { opacity: 0; transform: translateY(-16px) scale(0.6) rotate(-12deg); }
+  60% { opacity: 1; transform: translateY(0) scale(1.08) rotate(4deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* What the character is saying on the landing page. Quieter than the
+   sub-head: it is flavour, not instruction. */
+.stage-says {
+  margin: 14px 0 0;
+  font: 600 13px/1.35 var(--body);
+  color: var(--ink-3);
+  font-style: italic;
+}
+
+/* Compact reassurance chips. */
+.promise-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: center;
+}
+
+.promise-chip {
+  font: 600 12px/1 var(--body);
+  color: var(--ink-2);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  padding: 9px 13px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 /* The mark above the headline, breathing gently. */
@@ -1981,173 +2155,154 @@ body {
 }
 
 /* ==========================================================================
- * Pippo the fox
+ * The buddy
  *
- * Each mood gets its own motion, because a character who moves the same way
- * whatever happens reads as a decal rather than a reaction. The body group
- * is what moves; the face is drawn per mood in the component.
+ * The character is the player's own avatar emoji on a lit disc. What makes
+ * it read as a character rather than clip art is the disc, the contact
+ * shadow, and a distinct motion per mood -- one that moves identically
+ * whatever happens reads as a decal.
  * ========================================================================== */
 
 .mascot {
-  display: block;
-  overflow: visible;
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: var(--m-size, 64px);
+  height: var(--m-size, 64px);
+  flex: none;
 }
 
-.mascot-body {
-  transform-box: fill-box;
-  transform-origin: 50% 85%;
+.mascot-disc {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 34% 28%, #fff 0%,
+      color-mix(in srgb, var(--tint) 16%, #fff) 60%,
+      color-mix(in srgb, var(--tint) 30%, #fff) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -5px 12px color-mix(in srgb, var(--tint) 20%, transparent),
+    0 6px 14px -4px color-mix(in srgb, var(--tint) 50%, transparent);
+  transform-origin: 50% 88%;
+}
+
+.mascot-face {
+  font-size: calc(var(--m-size, 64px) * 0.52);
+  line-height: 1;
+  /* The emoji is the face, so it must not inherit a text colour or get
+     clipped by the disc's overflow. */
+  display: block;
 }
 
 /* Idle: a slow breath, barely there. */
-.mascot-idle .mascot-body {
-  animation: foxBreathe 3.6s ease-in-out infinite;
+.mascot-idle .mascot-disc {
+  animation: budBreathe 3.6s ease-in-out infinite;
 }
 
-@keyframes foxBreathe {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-2px) scale(1.02);
-  }
+@keyframes budBreathe {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-3px) scale(1.03); }
 }
 
 /* Happy: a gentle rock. */
-.mascot-happy .mascot-body {
-  animation: foxRock 2s ease-in-out infinite;
+.mascot-happy .mascot-disc {
+  animation: budRock 2s ease-in-out infinite;
 }
 
-@keyframes foxRock {
-  0%,
-  100% {
-    transform: rotate(-3deg);
-  }
-  50% {
-    transform: rotate(3deg);
-  }
+@keyframes budRock {
+  0%, 100% { transform: rotate(-5deg); }
+  50% { transform: rotate(5deg); }
 }
 
-/* Cheer: a real jump with a squash on landing. */
-.mascot-cheer .mascot-body {
-  animation: foxJump 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) infinite;
+/* Cheer: a real jump, squashing on landing. */
+.mascot-cheer .mascot-disc {
+  animation: budJump 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) infinite;
 }
 
-@keyframes foxJump {
-  0% {
-    transform: translateY(0) scale(1, 1);
-  }
-  22% {
-    transform: translateY(2px) scale(1.1, 0.9);
-  }
-  52% {
-    transform: translateY(-16px) scale(0.94, 1.08) rotate(-6deg);
-  }
-  78% {
-    transform: translateY(1px) scale(1.08, 0.93);
-  }
-  100% {
-    transform: translateY(0) scale(1, 1);
-  }
+@keyframes budJump {
+  0% { transform: translateY(0) scale(1, 1); }
+  22% { transform: translateY(3px) scale(1.12, 0.88); }
+  52% { transform: translateY(-18px) scale(0.93, 1.1) rotate(-8deg); }
+  78% { transform: translateY(2px) scale(1.09, 0.92); }
+  100% { transform: translateY(0) scale(1, 1); }
 }
 
 /* Worried: a quick nervous shiver. */
-.mascot-worried .mascot-body {
-  animation: foxShiver 0.4s ease-in-out infinite;
+.mascot-worried .mascot-disc {
+  animation: budShiver 0.38s ease-in-out infinite;
 }
 
-@keyframes foxShiver {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-1.5px);
-  }
-  75% {
-    transform: translateX(1.5px);
-  }
+@keyframes budShiver {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-2px) rotate(-2deg); }
+  75% { transform: translateX(2px) rotate(2deg); }
 }
 
 /* Sad: sinks and stays down. */
-.mascot-sad .mascot-body {
-  animation: foxSink 1.4s var(--ease-out) both;
+.mascot-sad .mascot-disc {
+  animation: budSink 1.4s var(--ease-out) both;
 }
 
-@keyframes foxSink {
-  to {
-    transform: translateY(4px) scale(1, 0.96);
-  }
+@keyframes budSink {
+  to { transform: translateY(4px) scale(1, 0.95); }
 }
 
-/* Thinking: tips the head side to side. */
-.mascot-thinking .mascot-body {
-  animation: foxPonder 2.4s ease-in-out infinite;
+/* Thinking: tips side to side. */
+.mascot-thinking .mascot-disc {
+  animation: budPonder 2.4s ease-in-out infinite;
 }
 
-@keyframes foxPonder {
-  0%,
-  100% {
-    transform: rotate(-5deg);
-  }
-  50% {
-    transform: rotate(5deg);
-  }
+@keyframes budPonder {
+  0%, 100% { transform: rotate(-7deg); }
+  50% { transform: rotate(7deg); }
 }
 
 /* Sleeping: slow deep breaths. */
-.mascot-sleeping .mascot-body {
-  animation: foxSleep 4s ease-in-out infinite;
+.mascot-sleeping .mascot-disc {
+  animation: budSleep 4s ease-in-out infinite;
 }
 
-@keyframes foxSleep {
-  0%,
-  100% {
-    transform: translateY(0) scale(1, 1);
-  }
-  50% {
-    transform: translateY(2px) scale(1.03, 0.97);
-  }
+@keyframes budSleep {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  50% { transform: translateY(3px) scale(1.04, 0.96); }
 }
 
-.mascot-zzz text {
-  animation: zzzFloat 2.6s ease-in-out infinite;
+/* --- floating marks ------------------------------------------------------ */
+
+.mascot-zzz,
+.mascot-spark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.mascot-zzz text:last-child {
-  animation-delay: 0.8s;
+.mascot-zzz i,
+.mascot-spark i {
+  position: absolute;
+  font-style: normal;
+  font-weight: 800;
+  font-size: calc(var(--m-size, 64px) * 0.2);
+  color: var(--ink-3);
 }
+
+.mascot-zzz i:nth-child(1) { top: -6%; right: -4%; animation: zzzFloat 2.6s ease-in-out infinite; }
+.mascot-zzz i:nth-child(2) { top: -22%; right: -18%; font-size: calc(var(--m-size, 64px) * 0.15); animation: zzzFloat 2.6s ease-in-out 0.9s infinite; }
 
 @keyframes zzzFloat {
-  0% {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-  40% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
+  0% { opacity: 0; transform: translateY(5px) scale(0.8); }
+  40% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-12px) scale(1.1); }
 }
 
-/* Blink. Driven on the eyes only, so it composes with any body motion. */
-.mascot-eye {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: foxBlink 5.2s infinite;
-}
+.mascot-spark i:nth-child(1) { top: -8%; left: -8%; animation: sparkPop 1.1s ease-in-out infinite; }
+.mascot-spark i:nth-child(2) { top: 4%; right: -10%; animation: sparkPop 1.1s ease-in-out 0.45s infinite; }
 
-@keyframes foxBlink {
-  0%,
-  94%,
-  100% {
-    transform: scaleY(1);
-  }
-  97% {
-    transform: scaleY(0.1);
-  }
+@keyframes sparkPop {
+  0%, 100% { opacity: 0; transform: scale(0.5) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.15) rotate(18deg); }
 }
 
 /* --- speech bubble ------------------------------------------------------- */
@@ -2187,14 +2342,8 @@ body {
 }
 
 @keyframes bubbleIn {
-  from {
-    opacity: 0;
-    transform: translateX(-8px) scale(0.92);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateX(-8px) scale(0.92); }
+  to { opacity: 1; transform: none; }
 }
 
 /* ==========================================================================

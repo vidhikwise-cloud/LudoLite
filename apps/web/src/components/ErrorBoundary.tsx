@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<
       <div className="shell">
         <div className="brandbar">
           <LudoMark />
-          <b>Ludo With Friends</b>
+          <b>LudoLite</b>
         </div>
 
         <div>

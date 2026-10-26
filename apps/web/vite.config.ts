@@ -9,7 +9,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
-        name: 'Ludo With Friends',
+        name: 'LudoLite',
         short_name: 'Ludo',
         description:
           'Play Ludo with friends. Rs 1 per match hosted. Zero paid ads.',

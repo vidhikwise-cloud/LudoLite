@@ -168,7 +168,12 @@ export function Game({
 
       {/* Pippo sits under the board, where he is visible without competing
           with the pieces for attention. */}
-      <MascotSays mood={mood} line={mascotLine(mood, state.version)} size={58} />
+      <MascotSays
+        avatar={progress.avatar}
+        mood={mood}
+        line={mascotLine(mood, state.version)}
+        size={58}
+      />
 
       <SeatStrip room={room} state={state} mySeat={mySeat} />
 
@@ -285,7 +290,7 @@ function MatchOver({
         {/* Pippo reacts to the result before the standings are read. He
             commiserates rather than gloats on a loss. */}
         <div className="victory-fox">
-          <Mascot mood={iWon ? 'cheer' : 'sad'} size={92} />
+          <Mascot avatar={progress.avatar} mood={iWon ? 'cheer' : 'sad'} size={92} />
         </div>
 
         <h2 className="victory-title">

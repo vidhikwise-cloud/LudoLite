@@ -18,7 +18,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'in.ludolite.app',
-  appName: 'Ludo With Friends',
+  appName: 'LudoLite',
   webDir: 'dist',
 
   android: {

@@ -601,6 +601,7 @@ export function App() {
             error={error}
             onStart={() => socketRef.current?.emit('room:start')}
             onLeave={leave}
+            avatar={progress.avatar}
             onCancelAndRefund={room.funding === 'paid' ? cancelAndRefund : undefined}
           />
         )

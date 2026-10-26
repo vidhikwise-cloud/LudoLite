@@ -71,8 +71,8 @@ export function CreateRoom({
 
   return (
     <form onSubmit={submit}>
-      <button type="button" className="btn-link" onClick={onBack}>
-        ← Back
+      <button type="button" className="backbtn" onClick={onBack} aria-label="Go back">
+        <span aria-hidden="true">←</span>
       </button>
 
       <h2 className="screen-title">Create a private room</h2>

@@ -70,8 +70,8 @@ export function PlayComputer({
 
   return (
     <form onSubmit={submit}>
-      <button type="button" className="btn-link" onClick={onBack}>
-        ← Back
+      <button type="button" className="backbtn" onClick={onBack} aria-label="Go back">
+        <span aria-hidden="true">←</span>
       </button>
 
       <h2 className="screen-title">Play against the computer</h2>

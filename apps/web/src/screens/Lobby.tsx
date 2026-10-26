@@ -24,6 +24,7 @@ export function Lobby({
   error,
   onStart,
   onLeave,
+  avatar,
   onCancelAndRefund,
 }: {
   room: RoomView;
@@ -32,6 +33,8 @@ export function Lobby({
   error: string | null;
   onStart: () => void;
   onLeave: () => void;
+  /** The player's chosen character, shown waiting with them. */
+  avatar: string;
   onCancelAndRefund?: () => void;
 }) {
   const [copied, setCopied] = useState<'code' | 'link' | null>(null);
@@ -65,7 +68,7 @@ export function Lobby({
 
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Ludo With Friends', text, url });
+        await navigator.share({ title: 'LudoLite', text, url });
         return;
       } catch {
         // User dismissed the sheet; fall through to copying.
@@ -166,6 +169,7 @@ export function Lobby({
         someone joins, which also makes an arrival visible without a banner.
       */}
       <MascotSays
+        avatar={avatar}
         mood={full ? 'cheer' : room.players.length > 1 ? 'happy' : 'sleeping'}
         line={
           full

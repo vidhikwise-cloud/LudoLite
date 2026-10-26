@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import type { PublicConfig } from '@ludolite/shared';
 
-import { BrandBar, TickIcon } from '../components/Brand.js';
+import { LudoMark } from '../components/Brand.js';
+import { Mascot, mascotLine } from '../components/Mascot.js';
 import { MuteToggle } from '../components/MuteToggle.js';
 import {
   AvatarSheet,
@@ -18,18 +19,21 @@ import { levelProgress, setAvatar, setTheme, type ProgressState } from '../lib/p
  *
  * The first screen does three jobs, in this order:
  *
- *   1. Say what this is and what it costs. The headline carries the price so
- *      nobody discovers the fee late, and "no cash prizes" sits high because
- *      the Act's test turns on whether players can win money -- a product
- *      that never pays out should say so where a reviewer lands first.
+ *   1. Say what this is, and show a character doing something, so the first
+ *      impression is a game rather than a form.
  *   2. Get the player into a match in one tap.
  *   3. Show what they have earned, which is what makes the app worth
  *      reopening tomorrow.
  *
+ * PRICE IS NOT MENTIONED HERE. Paid hosting is gated off (see
+ * docs/COMPLIANCE.md) and every match is currently free, so a headline
+ * about ₹1 would advertise something nobody can buy. The fee copy belongs
+ * on the create-room screen, where it is decided, and only once the gate is
+ * actually open.
+ *
  * Progression sits BELOW the play actions on purpose. A home screen that
  * leads with rewards is asking to be farmed; one that leads with "play"
- * treats the rewards as a consequence of playing, which is the honest
- * relationship and the one that survives contact with a bored user.
+ * treats the rewards as a consequence of playing.
  */
 export function Home({
   config,
@@ -52,31 +56,41 @@ export function Home({
   const [showAll, setShowAll] = useState(false);
 
   const played = progress.played > 0;
+  const { level } = levelProgress(progress.xp);
 
   return (
     <>
-      <BrandBar>
-        {/* The avatar chip is the profile entry point: a face and a level
-            read as "you" far faster than a labelled button would. */}
-        <button
-          type="button"
-          className="profilebtn"
-          onClick={onOpenProfile}
-          aria-label="Open your profile"
-        >
-          <span className="profilebtn-face" aria-hidden="true">
-            {progress.avatar}
-          </span>
-          <span className="profilebtn-lvl">Lv {levelProgress(progress.xp).level}</span>
-        </button>
-        <MuteToggle />
-      </BrandBar>
+      {/*
+        Header: brand on the left, controls on the right. The avatar is the
+        profile button -- a face reads as "you" faster than any label -- and
+        it is the same character that appears throughout the app.
+      */}
+      <header className="topbar">
+        <div className="topbar-brand">
+          <LudoMark size={30} />
+          <b>LudoLite</b>
+        </div>
+
+        <div className="topbar-actions">
+          <MuteToggle />
+          <button
+            type="button"
+            className="avatarbtn"
+            onClick={onOpenProfile}
+            aria-label="Open your profile"
+          >
+            <span className="avatarbtn-face" aria-hidden="true">
+              {progress.avatar}
+            </span>
+            <span className="avatarbtn-lvl">{level}</span>
+          </button>
+        </div>
+      </header>
 
       {/*
-        The stage. Four tokens run a lap of the border while the mark floats
-        above the headline, so the first thing on screen is motion rather
-        than a paragraph. All of it is decorative and hidden from assistive
-        tech -- the heading and the buttons are the actual content.
+        The stage. Four tokens run a lap of the border and the player's own
+        character waves from the middle, so the first thing on screen is
+        something alive. All decorative and hidden from assistive tech.
       */}
       <div className="stage">
         <div className="stage-track" aria-hidden="true">
@@ -87,27 +101,17 @@ export function Home({
         </div>
 
         <div className="stage-inner">
-          <div className="stage-mark" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-            <i />
+          <div className="stage-buddy">
+            <Mascot avatar={progress.avatar} mood="happy" size={96} />
           </div>
 
-          <h1>
-            Ludo With Friends.
-            <br />
-            <span className="rupee">₹1</span> per hosted match.
-          </h1>
+          <h1>Roll. Chase. Win.</h1>
           <p className="sub">
-            Create a room, share the code, play. Only the host pays — everyone else joins free.
+            Private Ludo rooms for you and your friends. Create a room, share the
+            code, play.
           </p>
 
-          <div className="stage-chips">
-            <span className="stage-chip">🚫 Zero ads</span>
-            <span className="stage-chip">🔒 Private rooms</span>
-            <span className="stage-chip">🎲 No cash prizes</span>
-          </div>
+          <p className="stage-says">{mascotLine('idle', progress.played)}</p>
         </div>
       </div>
 
@@ -137,7 +141,7 @@ export function Home({
             🤖
           </span>
           <span className="btn-rich-text">
-            <span className="btn-rich-title">Play Against the Computer</span>
+            <span className="btn-rich-title">Play the Computer</span>
             <span className="btn-rich-sub">Instant match, no waiting</span>
           </span>
         </button>
@@ -172,31 +176,19 @@ export function Home({
         </button>
       </div>
 
-      <div className="promises">
-        <div className="promise" style={{ color: 'var(--green)' }}>
-          <TickIcon />
-          <span style={{ color: 'var(--ink-2)' }}>
-            <b style={{ color: 'var(--ink)' }}>Zero paid ads.</b> No banners, no forced videos.
-          </span>
-        </div>
-        <div className="promise" style={{ color: 'var(--green)' }}>
-          <TickIcon />
-          <span style={{ color: 'var(--ink-2)' }}>
-            <b style={{ color: 'var(--ink)' }}>Only the host pays.</b> Friends join free.
-          </span>
-        </div>
-        <div className="promise" style={{ color: 'var(--green)' }}>
-          <TickIcon />
-          <span style={{ color: 'var(--ink-2)' }}>
-            <b style={{ color: 'var(--ink)' }}>No cash prizes.</b> Play for bragging rights.
-          </span>
-        </div>
+      {/*
+        The three promises, as compact chips rather than a bordered list.
+        They are reassurance, not a feature list, so they should read in a
+        glance and then get out of the way.
+      */}
+      <div className="promise-chips">
+        <span className="promise-chip">🚫 No ads</span>
+        <span className="promise-chip">🔒 Private rooms</span>
+        <span className="promise-chip">🏆 No cash prizes</span>
       </div>
 
       {config && !config.paidHostingEnabled ? (
-        <p className="footnote">
-          Free private matches are available while paid hosting is being prepared.
-        </p>
+        <p className="footnote">Every match is free right now.</p>
       ) : null}
 
       {sheet === 'avatar' ? (
