@@ -134,15 +134,23 @@ services:
       - key: SESSION_SECRET
         generateValue: true          # Render generates and stores it
 
-      # Admin dashboard at /admin. Render generates the token; read it from
-      # the dashboard (Environment tab) to log in.
+      # Admin dashboard, at /admin/<ADMIN_SLUG>.
       #
-      # Removing this variable disables the dashboard entirely -- every
-      # admin route 404s and the page stops being served. It fails closed
-      # on purpose: the failure mode of a missing token would otherwise be
-      # exposing player activity to the internet.
-      - key: ADMIN_TOKEN
-        generateValue: true
+      # Both values fall back to defaults compiled into the source, which
+      # means THEY ARE PUBLIC: anyone who can read this repository can read
+      # them. That is an acceptable trade while the dashboard only shows
+      # nicknames and match outcomes on a test deployment.
+      #
+      # Set both here, to values not in the repo, before this guards
+      # anything whose exposure would matter. The slug is not a secret in
+      # any case -- it only keeps crawlers away from the login box, and the
+      # password is what actually guards the data, so the two must never be
+      # the same string.
+      #
+      # - key: ADMIN_TOKEN
+      #   sync: false
+      # - key: ADMIN_SLUG
+      #   sync: false
 
       # The web app is served from this same service, so it needs no CORS
       # entry. The Android app does: the Capacitor webview loads from the

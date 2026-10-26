@@ -3,7 +3,8 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>LudoLite · Admin</title>
+    <!-- Neutral: the tab title is visible in history and over a shoulder. -->
+    <title>Console</title>
     <style>
       /*
        * Deliberately one self-contained file with no build step and no
@@ -71,13 +72,37 @@
   </head>
   <body>
     <div class="wrap">
-      <h1>LudoLite · Admin</h1>
-      <p class="sub">Read-only. Device labels are hashed; no payment data, tokens, or IP addresses are shown.</p>
+      <!--
+        The heading only appears once someone is in. Before that the page
+        is a box and nothing else: a stranger who stumbles onto the URL
+        should not be told what they have found or what it guards.
+      -->
+      <div id="head" hidden>
+        <h1>LudoLite · Admin</h1>
+        <p class="sub">
+          Read-only. Device labels are hashed; no payment data, tokens, or IP
+          addresses are shown.
+        </p>
+      </div>
 
       <div id="gate" class="gate">
-        <label for="tok" style="display:block;margin-bottom:6px;font-size:13px">Admin token</label>
-        <input id="tok" type="password" autocomplete="off" placeholder="ADMIN_TOKEN" />
-        <button id="go">Open dashboard</button>
+        <!--
+          Deliberately unlabelled: anyone who should be here already knows
+          what goes in the box, and a label only tells a stranger what they
+          have found. aria-label keeps it usable with a screen reader, which
+          costs nothing -- someone operating one is not the threat model.
+        -->
+        <input
+          id="tok"
+          type="password"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          aria-label="Access key"
+          autofocus
+        />
+        <button id="go">Enter</button>
         <div id="err" class="err"></div>
       </div>
 
@@ -146,7 +171,14 @@
         const res = await fetch('/api/admin' + path, {
           headers: { authorization: 'Bearer ' + token },
         });
-        if (!res.ok) throw new Error(res.status === 401 ? 'Wrong token' : 'Request failed (' + res.status + ')');
+        // "Incorrect" rather than naming what was wrong: the message is
+        // shown before anyone is authenticated, so it should confirm as
+        // little as possible about what the box wants.
+        if (!res.ok) {
+          throw new Error(
+            res.status === 401 ? 'Incorrect.' : 'Could not load (' + res.status + ')',
+          );
+        }
         return res.json();
       }
 
@@ -231,6 +263,7 @@
         try {
           await load();
           $('gate').hidden = true;
+          $('head').hidden = false;
           $('dash').hidden = false;
           // Refresh while the tab is open. Thirty seconds is often enough
           // to watch a match land without hammering a free-tier database.

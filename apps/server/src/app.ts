@@ -104,6 +104,26 @@ export function createApp(prisma: PrismaClient): express.Express {
       autoLogging: {
         ignore: (req) => req.url === '/health' || req.url === '/ready',
       },
+      /*
+       * Keep the admin slug out of the logs.
+       *
+       * pino-http records req.url, so without this every visit to the
+       * dashboard would write the secret path into Render's log stream --
+       * where it is readable by anyone with dashboard access and retained
+       * long after the fact. The request is still logged; only the secret
+       * part of the path is replaced.
+       */
+      customAttributeKeys: { req: 'req' },
+      serializers: {
+        req: (req: { url?: string; method?: string; id?: unknown }) => ({
+          id: req.id,
+          method: req.method,
+          url:
+            typeof req.url === 'string' && req.url.startsWith(`/admin/${config.adminSlug}`)
+              ? '/admin/[redacted]'
+              : req.url,
+        }),
+      },
     }),
   );
 
@@ -203,12 +223,33 @@ export function createApp(prisma: PrismaClient): express.Express {
       '../public/admin.html',
     );
     if (existsSync(adminPage)) {
-      app.get('/admin', (_req: Request, res: Response) => {
+      const send = (_req: Request, res: Response): void => {
         res.setHeader('X-Robots-Tag', 'noindex, nofollow');
         res.setHeader('Cache-Control', 'no-store');
+        // The page must not leak its own URL to anywhere it links or
+        // fetches. Without this the slug travels in the Referer header.
+        res.setHeader('Referrer-Policy', 'no-referrer');
         res.sendFile(adminPage);
+      };
+
+      // The real entry point: /admin/<slug>.
+      app.get(`/admin/${config.adminSlug}`, send);
+
+      /*
+       * Bare /admin 404s rather than serving the login box.
+       *
+       * The slug's only job is to keep crawlers and idle visitors from
+       * finding the page at a guessable address; answering /admin would
+       * defeat that entirely. It is not access control -- the password
+       * below is -- so this costs nothing and removes the obvious guess.
+       */
+      app.get('/admin', (_req: Request, res: Response) => {
+        res.status(404).json({ error: { code: 'ROOM_NOT_FOUND', message: 'Not found.' } });
       });
-      logger.info('admin dashboard enabled at /admin');
+
+      // Logged without the slug: this line goes to Render's log stream,
+      // which is exactly where a secret path should not be written.
+      logger.info('admin dashboard enabled');
     }
   }
 
@@ -237,10 +278,18 @@ export function createApp(prisma: PrismaClient): express.Express {
       }),
     );
 
-    // SPA fallback for client-side routes. Mounted after the API so it can
-    // never swallow an API path, and GET-only so a mistyped POST still 404s
-    // rather than silently returning the app shell.
-    app.get(/^(?!\/api\/).*/, (_req: Request, res: Response) => {
+    /*
+     * SPA fallback for client-side routes. Mounted after the API so it can
+     * never swallow an API path, and GET-only so a mistyped POST still
+     * 404s rather than silently returning the app shell.
+     *
+     * `/admin` is excluded as well as `/api`. Without that exclusion a
+     * WRONG slug fell through to here and was answered with the game's
+     * index.html -- HTTP 200 -- which tells someone probing for the
+     * dashboard that /admin/<something> is a live namespace. A 404 tells
+     * them nothing.
+     */
+    app.get(/^(?!\/(api|admin)(\/|$)).*/, (_req: Request, res: Response) => {
       res.sendFile(join(webDist, 'index.html'));
     });
 

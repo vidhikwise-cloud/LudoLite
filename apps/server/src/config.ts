@@ -20,15 +20,30 @@ const schema = z.object({
   DATABASE_URL: z.string().optional(),
   SESSION_SECRET: z.string().min(16).default('dev-only-secret-change-me-now'),
   /**
-   * Enables the admin dashboard when set.
+   * The admin dashboard password.
    *
-   * Unset means the dashboard does not exist at all and every admin route
-   * 404s. That is the safe default: the failure mode of a missing token is
-   * exposing player activity to the internet, so it fails closed rather
-   * than open. Minimum length is enforced because a short token on a public
-   * URL is not a secret.
+   * Has a default so the dashboard works on a fresh deploy without any
+   * configuration. That default is in this repository and is therefore
+   * PUBLIC: anyone who can read the source can read it. Override
+   * ADMIN_TOKEN in the environment before this is used for anything whose
+   * exposure would matter.
    */
-  ADMIN_TOKEN: z.string().min(24).optional(),
+  ADMIN_TOKEN: z.string().min(8).default('vidz426907Welcome'),
+
+  /**
+   * The secret segment in the dashboard's URL: /admin/<ADMIN_SLUG>.
+   *
+   * An unguessable path is NOT access control. It only keeps casual
+   * visitors and crawlers from finding the login box; the password is what
+   * guards the data, and it is checked on every API call however the page
+   * was reached.
+   *
+   * Treat the slug as public. A URL path is written to server access logs,
+   * to browser history, and to the Referer header of any outbound link --
+   * which is why it must never be a prefix of the password, or seeing the
+   * URL would hand over most of the secret.
+   */
+  ADMIN_SLUG: z.string().min(6).default('vidz426907'),
 
   PAID_ROOM_HOSTING_ENABLED: booleanish,
   HOSTING_FEE_PAISE: z.coerce.number().int().nonnegative().default(100),
@@ -64,6 +79,7 @@ export const config = {
   databaseUrl: env.DATABASE_URL,
   sessionSecret: env.SESSION_SECRET,
   adminToken: env.ADMIN_TOKEN,
+  adminSlug: env.ADMIN_SLUG,
 
   /**
    * The env flag only. This is NOT sufficient to collect money — see

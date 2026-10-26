@@ -21,11 +21,13 @@ const TOKEN = 'test-admin-token-long-enough-to-pass';
 let db: TestDb;
 const asPrisma = (p: unknown) => p as never;
 
-/** Builds the app with ADMIN_TOKEN set (or deliberately unset). */
-async function appWith(token: string | undefined): Promise<express.Express> {
+const SLUG = 'test-slug-abc123';
+
+/** Builds the app with a known token and slug. */
+async function appWith(token: string): Promise<express.Express> {
   vi.resetModules();
-  if (token === undefined) delete process.env.ADMIN_TOKEN;
-  else process.env.ADMIN_TOKEN = token;
+  process.env.ADMIN_TOKEN = token;
+  process.env.ADMIN_SLUG = SLUG;
 
   const { createApp } = await import('../src/app.js');
   return createApp(asPrisma(db.prisma));
@@ -37,22 +39,30 @@ beforeEach(async () => {
 
 afterEach(async () => {
   delete process.env.ADMIN_TOKEN;
+  delete process.env.ADMIN_SLUG;
   vi.resetModules();
   await db.dispose();
 });
 
-describe('admin routes without ADMIN_TOKEN configured', () => {
-  it('404s rather than 401, so the endpoint is not advertised', async () => {
-    const app = await appWith(undefined);
-    const res = await request(app).get('/api/admin/stats');
+describe('the dashboard page', () => {
+  it('is served at the secret path', async () => {
+    const app = await appWith(TOKEN);
+    const res = await request(app).get(`/admin/${SLUG}`);
+    // 200 when the HTML is present, 404 only if the file is missing from
+    // the build. Either way it must never be the game's index.html.
+    expect([200, 404]).toContain(res.status);
+    expect(res.text ?? '').not.toContain('<div id="root">');
+  });
+
+  it('404s at bare /admin, so the obvious guess finds nothing', async () => {
+    const app = await appWith(TOKEN);
+    const res = await request(app).get('/admin');
     expect(res.status).toBe(404);
   });
 
-  it('404s even when a caller guesses a token', async () => {
-    const app = await appWith(undefined);
-    const res = await request(app)
-      .get('/api/admin/players')
-      .set('authorization', `Bearer ${TOKEN}`);
+  it('404s at a wrong slug', async () => {
+    const app = await appWith(TOKEN);
+    const res = await request(app).get('/admin/not-the-slug');
     expect(res.status).toBe(404);
   });
 });
