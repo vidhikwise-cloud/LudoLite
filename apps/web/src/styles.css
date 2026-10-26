@@ -1,37 +1,63 @@
 /*
  * Ludo With Friends.
  *
- * Palette is Ludo's own four token colours used as seat data, on a warm
- * paper ground. Deliberately avoids anything that reads as a betting app —
- * no neon, no gold, no casino dark.
+ * LIGHT ONLY. The dark scheme is deliberately not implemented: a dark board
+ * game reads as a betting app to adults and as drab to children, and this
+ * one is meant to be handed round a room. `color-scheme: light` below tells
+ * the browser and the Android webview not to auto-darken anything.
+ *
+ * The palette has to work for a nine-year-old and their parent at once.
+ * That rules out both ends: pastel reads as a toy, neon-on-black reads as a
+ * casino. What works for both is SATURATED COLOUR ON WHITE -- the register
+ * of a good board game box. Bright, confident, printed.
+ *
+ * The four seat colours are the brand. They are tuned here to stay vivid on
+ * white while keeping enough contrast for text to sit on them, and they are
+ * never used for anything except seats, so a colour on screen always means
+ * a player.
  */
 
 :root {
-  --paper: #fbf7f2;
-  --paper-2: #f3ece3;
+  color-scheme: light;
+
+  /* Ground: a clean near-white with the faintest warmth, so the saturated
+     colours have somewhere bright to sit. */
+  --paper: #fdfaf6;
+  --paper-2: #f4eee6;
   --card: #ffffff;
-  --ink: #231c1a;
-  --ink-2: #6b5e59;
-  --ink-3: #9b8c85;
-  --rule: #e4d9cd;
 
-  --red: #d64045;
-  --green: #2d9b5a;
-  --yellow: #e8a61c;
-  --blue: #2c6fbb;
+  /* Ink is a very dark warm brown rather than black: softer against white
+     over a long session, still well past AA contrast. */
+  --ink: #2a211d;
+  --ink-2: #6d5f58;
+  --ink-3: #9c8d85;
+  --rule: #ead9c7;
 
-  --accent: var(--red);
+  /* Seat colours. Brighter and more saturated than before -- these are the
+     game's identity and they should read from across a table. */
+  --red: #ef4352;
+  --green: #22a95e;
+  --yellow: #f6b312;
+  --blue: #2f7fe0;
+
+  /* A warm coral-red primary: energetic without being alarming, and it does
+     not read as "error" the way a pure red does. */
+  --accent: #ef4352;
   --accent-in: #ffffff;
-  --accent-sf: #fbeded;
+  --accent-sf: #ffeef0;
 
-  --ok-bg: #e8f3ec;
-  --ok-ink: #1d6e41;
-  --warn-bg: #fbf0da;
-  --warn-ink: #8a6008;
-  --off-bg: #efeae4;
-  --off-ink: #6b5e59;
-  --danger-bg: #fbeaea;
-  --danger-ink: #a32a2f;
+  /* Secondary accent for progression. Purple is the one hue not used by a
+     seat, so XP can never be mistaken for a player's colour. */
+  --xp-deep: #6d4bd8;
+
+  --ok-bg: #e4f6ec;
+  --ok-ink: #11803f;
+  --warn-bg: #fff2d6;
+  --warn-ink: #8a5f05;
+  --off-bg: #f1ebe4;
+  --off-ink: #6d5f58;
+  --danger-bg: #ffe9ea;
+  --danger-ink: #c32733;
 
   --display: 'Trebuchet MS', 'Lucida Grande', 'Segoe UI', system-ui, sans-serif;
   --body: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
@@ -41,17 +67,16 @@
   --radius: 12px;
 
   /*
-   * Premium surface tokens.
+   * Surface tokens.
    *
-   * The warm paper identity is kept deliberately -- see the note at the top
-   * of this file about not reading as a betting app. What is added is depth:
-   * layered shadows, a wood-toned accent for board furniture, and a tuned
-   * easing curve. No neon, no gold gradients, no casino dark.
+   * Depth comes from layered shadows and a wood tone for board furniture
+   * (the die's side wall, board edges) -- the materials of an actual board
+   * game rather than of software.
    */
-  --wood: #b07d4f;
-  --wood-2: #8a5f3a;
+  --wood: #c88a52;
+  --wood-2: #9a6536;
   --wood-ink: #4a3526;
-  --felt: #f7f1e8;
+  --felt: #fffdf9;
 
   /* A three-layer shadow reads as a physical object lifted off the page,
      where a single blur reads as a drop shadow on a flat rectangle. */
@@ -72,60 +97,10 @@
   --ease: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --xp: #7c5cd6;
-  --xp-sf: #f0ebfb;
-  --streak: #e8701c;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #191413;
-    --paper-2: #221b19;
-    --card: #241d1b;
-    --ink: #f4ede7;
-    --ink-2: #b5a49c;
-    --ink-3: #7e6e67;
-    --rule: #3a2e2b;
-
-    --red: #f0686d;
-    --green: #4fc07d;
-    --yellow: #f0b93c;
-    --blue: #5c9be0;
-
-    --accent: #f0686d;
-    --accent-in: #2a1211;
-    --accent-sf: #35211f;
-
-    --ok-bg: #1b2e22;
-    --ok-ink: #76cf9b;
-    --warn-bg: #332714;
-    --warn-ink: #e3b254;
-    --off-bg: #2b2320;
-    --off-ink: #ad9c94;
-    --danger-bg: #3a1e1e;
-    --danger-ink: #f08b8f;
-
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
-
-    --wood: #a4784f;
-    --wood-2: #7d5838;
-    --wood-ink: #e8d9c8;
-    --felt: #241d1b;
-
-    --lift-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.5);
-    --lift-2: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px -6px rgba(0, 0, 0, 0.6),
-      0 16px 32px -16px rgba(0, 0, 0, 0.7);
-    --lift-3: 0 2px 4px rgba(0, 0, 0, 0.6), 0 12px 28px -8px rgba(0, 0, 0, 0.7),
-      0 28px 56px -24px rgba(0, 0, 0, 0.8);
-
-    /* Barely-there in dark: a bright top edge on a dark surface reads as a
-       seam rather than a highlight if it is any stronger than this. */
-    --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-
-    --xp: #a68ae8;
-    --xp-sf: #2a2338;
-    --streak: #f09050;
-  }
+  --xp: #6d4bd8;
+  --xp-sf: #efe9ff;
+  --streak: #f2741a;
+  --streak-sf: #fff0e2;
 }
 
 * {
@@ -881,13 +856,6 @@ body {
 .board-wrap {
   filter: drop-shadow(0 10px 22px rgba(35, 28, 26, 0.16))
     drop-shadow(0 2px 4px rgba(35, 28, 26, 0.1));
-}
-
-@media (prefers-color-scheme: dark) {
-  .board-wrap {
-    filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.6))
-      drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-  }
 }
 
 /*
@@ -1791,14 +1759,26 @@ body {
  * screen reader experience is the heading and the buttons -- unchanged.
  * ========================================================================== */
 
+/*
+ * The hero is the one place colour leads rather than supports.
+ *
+ * Four soft colour washes -- one per seat -- bloom from the corners of a
+ * white card. The result is bright and unmistakably a game, while the text
+ * still sits on near-white so it stays easy to read. A flat tinted panel
+ * would have been simpler and would have read as a notice board.
+ */
 .stage {
   position: relative;
   border-radius: var(--radius-xl);
-  padding: 30px 20px 26px;
+  padding: 32px 20px 28px;
   text-align: center;
   overflow: hidden;
   background:
-    radial-gradient(130% 110% at 50% -10%, var(--card) 0%, var(--paper-2) 62%, var(--paper) 100%);
+    radial-gradient(60% 55% at 8% 4%, color-mix(in srgb, var(--red) 20%, transparent), transparent 70%),
+    radial-gradient(60% 55% at 95% 8%, color-mix(in srgb, var(--green) 20%, transparent), transparent 70%),
+    radial-gradient(62% 58% at 3% 96%, color-mix(in srgb, var(--blue) 19%, transparent), transparent 70%),
+    radial-gradient(62% 58% at 97% 94%, color-mix(in srgb, var(--yellow) 24%, transparent), transparent 70%),
+    #ffffff;
   border: 1px solid var(--rule);
   box-shadow: var(--lift-3), var(--sheen);
 }
@@ -1865,13 +1845,16 @@ body {
 }
 
 /* The mark above the headline, breathing gently. */
+/* Rows stated explicitly: with only columns defined, implicit row sizing let
+   one dot break out of the 2x2 and float above the group. */
 .stage-mark {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 16px;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 18px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  grid-template-rows: 1fr 1fr;
+  gap: 7px;
   animation: markFloat 4.5s ease-in-out infinite;
 }
 
@@ -1940,6 +1923,147 @@ body {
   padding: 7px 11px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+/* ==========================================================================
+ * First-run tour
+ * ========================================================================== */
+
+.tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(42, 33, 29, 0.45);
+  backdrop-filter: blur(4px);
+  animation: fadeIn 220ms ease both;
+}
+
+.tour {
+  position: relative;
+  width: min(380px, 100%);
+  border-radius: var(--radius-xl);
+  background: #fff;
+  box-shadow: var(--lift-3);
+  padding: 30px 24px 24px;
+  text-align: center;
+  animation: tourIn 420ms var(--ease) both;
+}
+
+@keyframes tourIn {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.tour-skip {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: 0;
+  padding: 6px 8px;
+  font: 600 13px/1 var(--body);
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+/*
+ * The art is a big emoji on a coloured disc. It is deliberately not an
+ * illustration set: emoji render natively at any size, carry no download,
+ * and already read as friendly to both children and adults. A bespoke
+ * illustration would look better and would cost assets, a pipeline and
+ * somebody to draw the next one.
+ */
+.tour-art {
+  width: 118px;
+  height: 118px;
+  margin: 4px auto 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 56px;
+  line-height: 1;
+  background:
+    radial-gradient(circle at 34% 28%, #fff 0%, color-mix(in srgb, var(--tint) 22%, #fff) 58%,
+      color-mix(in srgb, var(--tint) 36%, #fff) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -6px 14px color-mix(in srgb, var(--tint) 22%, transparent),
+    0 10px 24px -8px color-mix(in srgb, var(--tint) 55%, transparent);
+  animation: tourArtIn 620ms var(--ease) both;
+}
+
+.tour-art span {
+  animation: tourArtBob 3s ease-in-out 0.6s infinite;
+}
+
+@keyframes tourArtIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-22deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) rotate(6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tourArtBob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-7px) rotate(5deg);
+  }
+}
+
+.tour-title {
+  margin: 0 0 9px;
+  font: 800 23px/1.2 var(--display);
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.tour-body {
+  margin: 0 0 20px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+
+.tour-dots {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 18px;
+}
+
+.tour-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--rule);
+  transition: all 280ms var(--ease);
+}
+
+.tour-dot.on {
+  width: 22px;
+  background: var(--accent);
 }
 
 /* ========================================================================== */

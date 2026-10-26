@@ -13,8 +13,8 @@ export default defineConfig({
         short_name: 'Ludo',
         description:
           'Play Ludo with friends. Rs 1 per match hosted. Zero paid ads.',
-        theme_color: '#D64045',
-        background_color: '#FBF7F2',
+        theme_color: '#EF4352',
+        background_color: '#FDFAF6',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',

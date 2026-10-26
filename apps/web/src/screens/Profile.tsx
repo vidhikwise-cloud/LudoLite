@@ -38,10 +38,12 @@ export function Profile({
   progress,
   onProgressChange,
   onBack,
+  onReplayTour,
 }: {
   progress: ProgressState;
   onProgressChange: (next: ProgressState) => void;
   onBack: () => void;
+  onReplayTour: () => void;
 }) {
   const [sheet, setSheet] = useState<'avatar' | 'theme' | null>(null);
   const [editingName, setEditingName] = useState(false);
@@ -188,6 +190,10 @@ export function Profile({
       </div>
 
       <BadgeGrid progress={progress} />
+
+      <button type="button" className="btn btn-ghost" onClick={onReplayTour}>
+        Show the welcome tour again
+      </button>
 
       <p className="footnote">
         Everything here is stored on this device only. There is no account, and

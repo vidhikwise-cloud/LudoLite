@@ -6,6 +6,7 @@ import { BrandBar } from './components/Brand.js';
 import { ConnectionStatus, type ConnectionState } from './components/ConnectionStatus.js';
 import { MuteToggle } from './components/MuteToggle.js';
 import { RewardToasts, type RewardToast, type TallyLine } from './components/Progress.js';
+import { Tour, hasSeenTour } from './components/Tour.js';
 import * as api from './lib/api.js';
 import {
   loadProgress,
@@ -56,6 +57,9 @@ export function App() {
   const [autoStart, setAutoStart] = useState(false);
 
   const [progress, setProgress] = useState<ProgressState>(() => loadProgress());
+
+  /** Shown once on a first run; see components/Tour.tsx. */
+  const [tourOpen, setTourOpen] = useState(() => !hasSeenTour());
   const [toasts, setToasts] = useState<readonly RewardToast[]>([]);
 
   /**
@@ -526,6 +530,7 @@ export function App() {
           progress={progress}
           onProgressChange={setProgress}
           onBack={() => setScreen('home')}
+          onReplayTour={() => setTourOpen(true)}
         />
       ) : null}
 
@@ -568,6 +573,8 @@ export function App() {
       {/* Fixed-position overlay, so it is mounted once rather than per
           screen and never shifts layout underneath the board. */}
       <RewardToasts toasts={toasts} />
+
+      {tourOpen ? <Tour onDone={() => setTourOpen(false)} /> : null}
 
       {screen === 'room' && room ? (
         state && state.phase !== 'awaiting-players' ? (
