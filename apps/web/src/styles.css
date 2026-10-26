@@ -1926,6 +1926,278 @@ body {
 }
 
 /* ==========================================================================
+ * Victory extras
+ * ========================================================================== */
+
+.victory-fox {
+  display: flex;
+  justify-content: center;
+  margin: -4px 0 10px;
+  animation: victoryRise 0.5s var(--ease-out) 0.16s both;
+}
+
+/*
+ * Winning tokens dance.
+ *
+ * Applied to the standings' colour dots rather than to the board, because
+ * by the time this screen is up the board is gone. Each dot bounces a beat
+ * after the one above it, so the podium reads top-down.
+ */
+.standing:first-child .standing-dot {
+  animation: tokenDance 0.85s cubic-bezier(0.3, 1.4, 0.5, 1) infinite;
+}
+
+@keyframes tokenDance {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  28% {
+    transform: translateY(-7px) scale(0.92, 1.1);
+  }
+  56% {
+    transform: translateY(0) scale(1.12, 0.9);
+  }
+  74% {
+    transform: translateY(-2px) scale(1, 1);
+  }
+}
+
+/* The winning row itself gets a soft pulsing halo. */
+.victory.won + .standings .standing:first-child {
+  animation:
+    standingIn 0.4s var(--ease) both,
+    winnerGlow 2.2s ease-in-out 0.6s infinite;
+}
+
+@keyframes winnerGlow {
+  0%,
+  100% {
+    box-shadow: var(--lift-1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--seat) 22%, transparent), var(--lift-2);
+  }
+}
+
+/* ==========================================================================
+ * Pippo the fox
+ *
+ * Each mood gets its own motion, because a character who moves the same way
+ * whatever happens reads as a decal rather than a reaction. The body group
+ * is what moves; the face is drawn per mood in the component.
+ * ========================================================================== */
+
+.mascot {
+  display: block;
+  overflow: visible;
+}
+
+.mascot-body {
+  transform-box: fill-box;
+  transform-origin: 50% 85%;
+}
+
+/* Idle: a slow breath, barely there. */
+.mascot-idle .mascot-body {
+  animation: foxBreathe 3.6s ease-in-out infinite;
+}
+
+@keyframes foxBreathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+/* Happy: a gentle rock. */
+.mascot-happy .mascot-body {
+  animation: foxRock 2s ease-in-out infinite;
+}
+
+@keyframes foxRock {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+/* Cheer: a real jump with a squash on landing. */
+.mascot-cheer .mascot-body {
+  animation: foxJump 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) infinite;
+}
+
+@keyframes foxJump {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  22% {
+    transform: translateY(2px) scale(1.1, 0.9);
+  }
+  52% {
+    transform: translateY(-16px) scale(0.94, 1.08) rotate(-6deg);
+  }
+  78% {
+    transform: translateY(1px) scale(1.08, 0.93);
+  }
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+}
+
+/* Worried: a quick nervous shiver. */
+.mascot-worried .mascot-body {
+  animation: foxShiver 0.4s ease-in-out infinite;
+}
+
+@keyframes foxShiver {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1.5px);
+  }
+  75% {
+    transform: translateX(1.5px);
+  }
+}
+
+/* Sad: sinks and stays down. */
+.mascot-sad .mascot-body {
+  animation: foxSink 1.4s var(--ease-out) both;
+}
+
+@keyframes foxSink {
+  to {
+    transform: translateY(4px) scale(1, 0.96);
+  }
+}
+
+/* Thinking: tips the head side to side. */
+.mascot-thinking .mascot-body {
+  animation: foxPonder 2.4s ease-in-out infinite;
+}
+
+@keyframes foxPonder {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
+}
+
+/* Sleeping: slow deep breaths. */
+.mascot-sleeping .mascot-body {
+  animation: foxSleep 4s ease-in-out infinite;
+}
+
+@keyframes foxSleep {
+  0%,
+  100% {
+    transform: translateY(0) scale(1, 1);
+  }
+  50% {
+    transform: translateY(2px) scale(1.03, 0.97);
+  }
+}
+
+.mascot-zzz text {
+  animation: zzzFloat 2.6s ease-in-out infinite;
+}
+
+.mascot-zzz text:last-child {
+  animation-delay: 0.8s;
+}
+
+@keyframes zzzFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Blink. Driven on the eyes only, so it composes with any body motion. */
+.mascot-eye {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: foxBlink 5.2s infinite;
+}
+
+@keyframes foxBlink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0.1);
+  }
+}
+
+/* --- speech bubble ------------------------------------------------------- */
+
+.mascotsays {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mascot-bubble {
+  position: relative;
+  margin: 0;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  font: 600 13.5px/1.35 var(--body);
+  color: var(--ink);
+  animation: bubbleIn 360ms var(--ease) both;
+}
+
+/* The tail, as a rotated square tucked behind the bubble's left edge. */
+.mascot-bubble::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  background: var(--card);
+  border-left: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  transform: rotate(45deg);
+}
+
+@keyframes bubbleIn {
+  from {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ==========================================================================
  * First-run tour
  * ========================================================================== */
 

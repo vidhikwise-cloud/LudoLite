@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board.js';
 import { Confetti } from '../components/Confetti.js';
 import { Dice, ROLL_MS } from '../components/Dice.js';
+import { Mascot, MascotSays, mascotLine, type Mood } from '../components/Mascot.js';
 import { ReactionBar, XpTally, type TallyLine } from '../components/Progress.js';
 import type { ProgressState } from '../lib/progress.js';
 import { sfx } from '../lib/feedback.js';
@@ -97,6 +98,35 @@ export function Game({
   const turnPlayer = room.players.find((p) => p.seat === state.turnSeat);
   const turnColour = SEAT_COLOR_BY_INDEX[state.turnSeat];
 
+  /*
+   * What Pippo is feeling, derived from the board rather than from events.
+   *
+   * Deriving it means the mood survives a reconnect and never gets stuck in
+   * a stale reaction: whatever the state says is true right now is what he
+   * reflects. He never shows a discouraging face on the player's own turn --
+   * a mascot that looks disappointed in you is one people turn off.
+   */
+  const mood: Mood = (() => {
+    if (mySeat === null) return 'idle';
+    const mine = state.seats.find((s) => s.index === mySeat);
+    const myHome = mine?.tokens.filter((t) => t.position.kind === 'finish').length ?? 0;
+    const myYard = mine?.tokens.filter((t) => t.position.kind === 'yard').length ?? 0;
+
+    // Someone else is one token from winning.
+    const rivalClose = state.seats.some(
+      (s) =>
+        s.index !== mySeat &&
+        s.playerId !== null &&
+        s.tokens.filter((t) => t.position.kind === 'finish').length >= 3,
+    );
+
+    if (myHome >= 3) return 'cheer';
+    if (rivalClose) return 'worried';
+    if (!myTurn) return turnPlayer?.isBot ? 'thinking' : 'idle';
+    if (myYard === 4) return 'idle';
+    return 'happy';
+  })();
+
   return (
     <>
       <div className={`turnbar${myTurn ? ' mine' : ''}`}>
@@ -135,6 +165,10 @@ export function Game({
       </div>
 
       <Board state={state} mySeat={mySeat} legal={legal} onMove={onMove} />
+
+      {/* Pippo sits under the board, where he is visible without competing
+          with the pieces for attention. */}
+      <MascotSays mood={mood} line={mascotLine(mood, state.version)} size={58} />
 
       <SeatStrip room={room} state={state} mySeat={mySeat} />
 
@@ -246,6 +280,12 @@ function MatchOver({
           aria-hidden="true"
         >
           {iWon ? '🏆' : '🎲'}
+        </div>
+
+        {/* Pippo reacts to the result before the standings are read. He
+            commiserates rather than gloats on a loss. */}
+        <div className="victory-fox">
+          <Mascot mood={iWon ? 'cheer' : 'sad'} size={92} />
         </div>
 
         <h2 className="victory-title">

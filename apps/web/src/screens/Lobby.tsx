@@ -3,6 +3,7 @@ import { SEAT_COLOR_BY_INDEX } from '@ludolite/engine';
 import { useEffect, useRef, useState } from 'react';
 
 import { InfoIcon, TickIcon } from '../components/Brand.js';
+import { MascotSays } from '../components/Mascot.js';
 import { sfx } from '../lib/feedback.js';
 
 /**
@@ -157,6 +158,24 @@ export function Lobby({
           <span>{error}</span>
         </div>
       ) : null}
+
+      {/*
+        The wait is the weakest moment in the whole flow: nothing is
+        happening and the people you invited have not arrived yet. Pippo
+        fills it -- asleep while the room is empty, awake and expectant once
+        someone joins, which also makes an arrival visible without a banner.
+      */}
+      <MascotSays
+        mood={full ? 'cheer' : room.players.length > 1 ? 'happy' : 'sleeping'}
+        line={
+          full
+            ? 'Everyone is here. Start whenever.'
+            : room.players.length > 1
+              ? `${waiting} more and we can begin.`
+              : 'Nobody yet. Send them the code.'
+        }
+        size={56}
+      />
 
       <div className="btn-stack">
         {isHost ? (
