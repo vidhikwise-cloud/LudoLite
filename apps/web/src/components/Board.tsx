@@ -297,16 +297,108 @@ export function Board({
         aria-label="Ludo board"
       >
         <defs>
-          {/* Soft drop shadow gives tokens physical weight. */}
-          <filter id="tokenShadow" x="-60%" y="-60%" width="220%" height="220%">
-            <feDropShadow dx="0" dy="0.08" stdDeviation="0.07" floodOpacity="0.38" />
+          {/*
+           * Everything here exists to make the board read as a physical
+           * object under a single light source, up and slightly left.
+           *
+           * A flat fill with a drop shadow reads as a dot on paper; the same
+           * circle with a rim, a specular highlight and a contact shadow
+           * reads as a counter sitting ON something. That difference is most
+           * of what separates "an app showing a board" from "a game".
+           *
+           * All of it is SVG gradients and one blur filter -- no images, no
+           * extra bytes, and it scales to any screen.
+           */}
+
+          {/* Contact shadow: tight and offset down, so a token looks like it
+              is resting on the square rather than floating over it. */}
+          <filter id="tokenShadow" x="-70%" y="-70%" width="240%" height="240%">
+            <feDropShadow dx="0.02" dy="0.1" stdDeviation="0.055" floodOpacity="0.45" />
           </filter>
-          {/* Highlight ring that pulses on a playable token. */}
+
+          {/* A playable token lifts: a larger, softer shadow sells the height. */}
+          <filter id="tokenShadowLift" x="-90%" y="-90%" width="280%" height="280%">
+            <feDropShadow dx="0.03" dy="0.17" stdDeviation="0.1" floodOpacity="0.4" />
+          </filter>
+
+          {/* Panels and the board slab get a broad ambient shadow. */}
+          <filter id="slabShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="0.12" stdDeviation="0.16" floodOpacity="0.2" />
+          </filter>
+
           <radialGradient id="centreGlow">
             <stop offset="0%" stopColor="#fff" stopOpacity="0.5" />
             <stop offset="100%" stopColor="#fff" stopOpacity="0" />
           </radialGradient>
+
+          {/*
+           * Token body shading. The light is up-left, so the highlight sits
+           * at 32%/28% and the colour deepens toward the lower right. Pure
+           * white at the centre would look like plastic wrap; a partial
+           * white over the seat colour keeps the hue and still domes.
+           */}
+          <radialGradient id="tokenDome" cx="34%" cy="28%" r="78%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.55" />
+            <stop offset="42%" stopColor="#fff" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="#000" stopOpacity="0.3" />
+          </radialGradient>
+
+          {/* The specular dot: small, bright, up-left. This is the single
+              most effective pixel on the whole board for "it is a 3D thing". */}
+          <radialGradient id="tokenSpec" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.95" />
+            <stop offset="60%" stopColor="#fff" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </radialGradient>
+
+          {/* Board slab: a warm wash with a lit top-left corner, so the
+              playfield is not a uniform rectangle of colour. */}
+          <linearGradient id="slab" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.1" />
+            <stop offset="55%" stopColor="#fff" stopOpacity="0.02" />
+            <stop offset="100%" stopColor="#000" stopOpacity="0.07" />
+          </linearGradient>
+
+          {/* Yard wells read as recessed: dark at the top edge where the
+              rim would cast inward, lighter at the bottom. Inverse of the
+              token, which is what makes one dome and the other dish. */}
+          <linearGradient id="well" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#000" stopOpacity="0.16" />
+            <stop offset="45%" stopColor="#000" stopOpacity="0.04" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0.07" />
+          </linearGradient>
+
+          {/* Home-column squares get a subtle lengthwise sheen. */}
+          <linearGradient id="laneSheen" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#fff" stopOpacity="0" />
+          </linearGradient>
         </defs>
+
+        {/*
+         * The slab the game is played on.
+         *
+         * Without this the squares float on the page background and the
+         * board has no edge. With it there is a table, and everything else
+         * sits on top of something.
+         */}
+        <rect
+          x={-0.15}
+          y={-0.15}
+          width={GRID + 0.3}
+          height={GRID + 0.3}
+          rx={0.9}
+          className="board-slab"
+          filter="url(#slabShadow)"
+        />
+        <rect
+          x={-0.15}
+          y={-0.15}
+          width={GRID + 0.3}
+          height={GRID + 0.3}
+          rx={0.9}
+          fill="url(#slab)"
+        />
 
         {/* Yard blocks */}
         {([0, 1, 2, 3] as SeatIndex[]).map((seat) => {
@@ -333,6 +425,17 @@ export function Board({
                 rx={0.4}
                 fill="var(--card)"
                 opacity={0.82}
+              />
+              {/* Inset shading: dark along the top inner edge, light along
+                  the bottom. The token uses the opposite ramp, so one dishes
+                  and the other domes under the same light. */}
+              <rect
+                x={x + 0.9}
+                y={y + 0.9}
+                width={4.2}
+                height={4.2}
+                rx={0.4}
+                fill="url(#well)"
               />
               <rect
                 x={x}
@@ -449,22 +552,48 @@ export function Board({
               }
             >
               {canMove ? <circle r={0.52} className="token-halo" fill={colour} /> : null}
-              <circle className="token-body" r={0.34} fill={colour} filter="url(#tokenShadow)" />
-              {/* Rim and gloss read as a rounded, lit piece rather than a flat dot. */}
+
+              {/*
+               * A carrom-style counter, built in layers from the table up:
+               *
+               *   base    the dark footprint the piece sits on, offset down
+               *           so there is a visible edge of "side wall"
+               *   body    the seat colour, carrying the contact shadow
+               *   dome    light from the upper left, dark to the lower right
+               *   rim     bright along the top arc only, where a real rounded
+               *           edge would catch the light
+               *   spec    the small bright highlight
+               *   pip     a centre dot, which is what makes it look like a
+               *           game piece rather than a bead
+               *
+               * Six cheap shapes. No images, and it scales to any screen.
+               */}
+              <circle cx={0} cy={0.055} r={0.335} fill="#000" opacity={0.3} />
               <circle
-                className="token-rim"
+                className="token-body"
                 r={0.34}
+                fill={colour}
+                filter={canMove ? 'url(#tokenShadowLift)' : 'url(#tokenShadow)'}
+              />
+              <circle className="token-dome" r={0.34} fill="url(#tokenDome)" />
+              {/* Top arc only: a full ring reads as a sticker, an arc as a bevel. */}
+              <path
+                className="token-rim"
+                d="M -0.3 -0.12 A 0.325 0.325 0 0 1 0.3 -0.12"
                 fill="none"
-                stroke="rgba(255,255,255,0.5)"
+                stroke="rgba(255,255,255,0.65)"
                 strokeWidth={0.05}
+                strokeLinecap="round"
               />
               <circle
                 className="token-gloss"
-                cx={-0.09}
-                cy={-0.1}
-                r={0.1}
-                fill="rgba(255,255,255,0.55)"
+                cx={-0.105}
+                cy={-0.115}
+                r={0.105}
+                fill="url(#tokenSpec)"
               />
+              <circle cx={0} cy={0} r={0.1} fill="#000" opacity={0.17} />
+              <circle cx={0} cy={-0.012} r={0.085} fill={colour} opacity={0.92} />
             </g>
           );
         })}
