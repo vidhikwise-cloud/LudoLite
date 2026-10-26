@@ -134,6 +134,16 @@ services:
       - key: SESSION_SECRET
         generateValue: true          # Render generates and stores it
 
+      # Admin dashboard at /admin. Render generates the token; read it from
+      # the dashboard (Environment tab) to log in.
+      #
+      # Removing this variable disables the dashboard entirely -- every
+      # admin route 404s and the page stops being served. It fails closed
+      # on purpose: the failure mode of a missing token would otherwise be
+      # exposing player activity to the internet.
+      - key: ADMIN_TOKEN
+        generateValue: true
+
       # The web app is served from this same service, so it needs no CORS
       # entry. The Android app does: the Capacitor webview loads from the
       # origin `https://localhost`, so every API call it makes is

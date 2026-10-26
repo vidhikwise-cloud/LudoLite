@@ -19,6 +19,16 @@ const schema = z.object({
   CORS_ORIGINS: z.string().default('http://localhost:5173'),
   DATABASE_URL: z.string().optional(),
   SESSION_SECRET: z.string().min(16).default('dev-only-secret-change-me-now'),
+  /**
+   * Enables the admin dashboard when set.
+   *
+   * Unset means the dashboard does not exist at all and every admin route
+   * 404s. That is the safe default: the failure mode of a missing token is
+   * exposing player activity to the internet, so it fails closed rather
+   * than open. Minimum length is enforced because a short token on a public
+   * URL is not a secret.
+   */
+  ADMIN_TOKEN: z.string().min(24).optional(),
 
   PAID_ROOM_HOSTING_ENABLED: booleanish,
   HOSTING_FEE_PAISE: z.coerce.number().int().nonnegative().default(100),
@@ -53,6 +63,7 @@ export const config = {
     .filter(Boolean),
   databaseUrl: env.DATABASE_URL,
   sessionSecret: env.SESSION_SECRET,
+  adminToken: env.ADMIN_TOKEN,
 
   /**
    * The env flag only. This is NOT sufficient to collect money — see

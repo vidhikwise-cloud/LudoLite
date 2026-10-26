@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LudoLite · Admin</title>
+    <style>
+      /*
+       * Deliberately one self-contained file with no build step and no
+       * dependencies. An internal tool that needs a toolchain is one that
+       * rots the first time nobody has run `npm install` in six months.
+       */
+      :root {
+        --bg: #f6f7f9;
+        --card: #fff;
+        --ink: #1c2024;
+        --ink-2: #5b646e;
+        --ink-3: #8b949e;
+        --rule: #e3e7ec;
+        --ok: #11803f;
+        --warn: #9a6207;
+        --bad: #c32733;
+        --accent: #3f5ae0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+        padding: 24px 16px 60px;
+      }
+      .wrap { max-width: 1100px; margin: 0 auto; }
+      h1 { font-size: 22px; margin: 0 0 4px; }
+      .sub { color: var(--ink-2); margin: 0 0 22px; font-size: 13.5px; }
+
+      .gate { max-width: 380px; }
+      input {
+        width: 100%; padding: 11px 13px; border: 1px solid var(--rule);
+        border-radius: 9px; font: inherit; background: var(--card);
+      }
+      button {
+        padding: 11px 18px; border: 0; border-radius: 9px; background: var(--accent);
+        color: #fff; font: 600 15px/1 inherit; cursor: pointer; margin-top: 10px;
+      }
+      button:hover { filter: brightness(1.08); }
+
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 26px; }
+      .stat { background: var(--card); border: 1px solid var(--rule); border-radius: 11px; padding: 14px 16px; }
+      .stat b { display: block; font-size: 25px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+      .stat span { color: var(--ink-3); font-size: 12px; }
+
+      h2 { font-size: 15px; margin: 26px 0 10px; }
+      .tablewrap { background: var(--card); border: 1px solid var(--rule); border-radius: 11px; overflow-x: auto; }
+      table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+      th, td { text-align: left; padding: 10px 13px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+      th { color: var(--ink-3); font: 600 11px/1 inherit; letter-spacing: .07em; text-transform: uppercase; }
+      tr:last-child td { border-bottom: 0; }
+      .mono { font-family: Consolas, monospace; font-size: 12px; color: var(--ink-2); }
+
+      .pill { display: inline-block; padding: 3px 8px; border-radius: 99px; font: 600 11px/1.5 inherit; }
+      .pill.ok { background: #e4f6ec; color: var(--ok); }
+      .pill.warn { background: #fff3d9; color: var(--warn); }
+      .pill.bad { background: #ffe9ea; color: var(--bad); }
+      .pill.bot { background: #eef0f4; color: var(--ink-2); }
+
+      .seats { display: flex; flex-wrap: wrap; gap: 5px; }
+      .err { color: var(--bad); margin-top: 10px; font-size: 13.5px; }
+      .muted { color: var(--ink-3); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>LudoLite · Admin</h1>
+      <p class="sub">Read-only. Device labels are hashed; no payment data, tokens, or IP addresses are shown.</p>
+
+      <div id="gate" class="gate">
+        <label for="tok" style="display:block;margin-bottom:6px;font-size:13px">Admin token</label>
+        <input id="tok" type="password" autocomplete="off" placeholder="ADMIN_TOKEN" />
+        <button id="go">Open dashboard</button>
+        <div id="err" class="err"></div>
+      </div>
+
+      <div id="dash" hidden>
+        <div class="stats" id="stats"></div>
+
+        <h2>Recent matches</h2>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Started</th><th>Players</th><th>Outcome</th>
+                <th>Moves</th><th>Length</th><th>Room</th>
+              </tr>
+            </thead>
+            <tbody id="matches"></tbody>
+          </table>
+        </div>
+
+        <h2>Players</h2>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th><th>Device</th><th>Joined</th>
+                <th>Hosted</th><th>Left early</th><th>First seen</th><th>Last seen</th>
+              </tr>
+            </thead>
+            <tbody id="players"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Everything below writes with textContent, never innerHTML, because
+      // display names are user-supplied text and must never be able to
+      // become markup on this page.
+      const $ = (id) => document.getElementById(id);
+      let token = '';
+
+      const fmt = (iso) => (iso ? new Date(iso).toLocaleString() : '—');
+      const dur = (ms) => {
+        if (ms == null) return '—';
+        const m = Math.floor(ms / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        return m > 0 ? m + 'm ' + s + 's' : s + 's';
+      };
+
+      function cell(row, text, cls) {
+        const td = document.createElement('td');
+        td.textContent = text;
+        if (cls) td.className = cls;
+        row.appendChild(td);
+        return td;
+      }
+
+      function pill(text, kind) {
+        const s = document.createElement('span');
+        s.className = 'pill ' + kind;
+        s.textContent = text;
+        return s;
+      }
+
+      async function get(path) {
+        const res = await fetch('/api/admin' + path, {
+          headers: { authorization: 'Bearer ' + token },
+        });
+        if (!res.ok) throw new Error(res.status === 401 ? 'Wrong token' : 'Request failed (' + res.status + ')');
+        return res.json();
+      }
+
+      async function load() {
+        const [stats, matches, players] = await Promise.all([
+          get('/stats'), get('/matches?limit=30'), get('/players?limit=50'),
+        ]);
+
+        const S = $('stats');
+        S.textContent = '';
+        [
+          ['Players', stats.players],
+          ['New today', stats.newPlayersToday],
+          ['Rooms', stats.rooms],
+          ['Matches', stats.matches],
+          ['Finished', stats.matchesFinished],
+          ['Abandoned', stats.matchesAbandoned],
+          ['In play now', stats.roomsInPlay],
+        ].forEach(([label, value]) => {
+          const d = document.createElement('div');
+          d.className = 'stat';
+          const b = document.createElement('b');
+          b.textContent = String(value);
+          const sp = document.createElement('span');
+          sp.textContent = label;
+          d.append(b, sp);
+          S.appendChild(d);
+        });
+
+        const M = $('matches');
+        M.textContent = '';
+        matches.matches.forEach((m) => {
+          const tr = document.createElement('tr');
+          cell(tr, fmt(m.startedAt));
+
+          const td = document.createElement('td');
+          const box = document.createElement('div');
+          box.className = 'seats';
+          m.players.forEach((p) => {
+            let kind = 'bot';
+            if (!p.isBot) kind = p.won ? 'ok' : p.walkedOut ? 'bad' : 'warn';
+            let label = p.name;
+            if (p.isHost) label += ' ★';
+            if (p.won) label += ' 🏆';
+            if (p.walkedOut) label += ' (left)';
+            box.appendChild(pill(label, kind));
+          });
+          td.appendChild(box);
+          tr.appendChild(td);
+
+          const out = document.createElement('td');
+          out.appendChild(
+            m.completed ? pill('Completed', 'ok') : pill('Abandoned', 'bad'),
+          );
+          tr.appendChild(out);
+
+          cell(tr, String(m.moves));
+          cell(tr, dur(m.durationMs));
+          cell(tr, m.funding + ' · ' + m.roomStatus, 'mono');
+          M.appendChild(tr);
+        });
+
+        const P = $('players');
+        P.textContent = '';
+        players.players.forEach((p) => {
+          const tr = document.createElement('tr');
+          cell(tr, p.displayName);
+          cell(tr, p.device, 'mono');
+          cell(tr, String(p.roomsJoined));
+          cell(tr, String(p.roomsHosted));
+          cell(tr, String(p.leftEarly), p.leftEarly > 0 ? '' : 'muted');
+          cell(tr, fmt(p.firstSeen));
+          cell(tr, fmt(p.lastSeen));
+          P.appendChild(tr);
+        });
+      }
+
+      async function open_() {
+        token = $('tok').value.trim();
+        if (!token) return;
+        $('err').textContent = '';
+        try {
+          await load();
+          $('gate').hidden = true;
+          $('dash').hidden = false;
+          // Refresh while the tab is open. Thirty seconds is often enough
+          // to watch a match land without hammering a free-tier database.
+          setInterval(() => load().catch(() => {}), 30000);
+        } catch (e) {
+          $('err').textContent = e.message;
+        }
+      }
+
+      $('go').addEventListener('click', open_);
+      $('tok').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') open_();
+      });
+    </script>
+  </body>
+</html>

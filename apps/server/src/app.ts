@@ -19,6 +19,7 @@ import { ZodError } from 'zod';
 import { config } from './config.js';
 import { ApiError } from './errors.js';
 import { logger } from './logger.js';
+import { adminRoutes } from './routes/admin.js';
 import { apiRouter } from './routes/api.js';
 import { healthRouter } from './routes/health.js';
 import { webhookRouter } from './routes/webhooks.js';
@@ -175,6 +176,41 @@ export function createApp(prisma: PrismaClient): express.Express {
   app.use('/api/rooms/join', joinLimiter);
 
   app.use('/api', apiRouter(prisma));
+
+  /*
+   * Admin reporting. Read-only, and 404s entirely unless ADMIN_TOKEN is
+   * set -- see routes/admin.ts. Rate limited with the rest of /api above.
+   */
+  app.use('/api/admin', adminRoutes(prisma));
+
+  /*
+   * The admin dashboard page.
+   *
+   * Mounted BEFORE the SPA fallback below, which would otherwise answer
+   * /admin with the game's index.html. The page itself is public and holds
+   * no data -- it is a login box until a token is entered, and every call
+   * it makes is authenticated by routes/admin.ts. Served only when
+   * ADMIN_TOKEN is configured, so an unconfigured deploy has no admin
+   * surface at all.
+   *
+   * noindex because an internal tool has no business in a search index.
+   */
+  if (config.adminToken) {
+    // One level up from dist/, not two: this file runs as
+    // apps/server/dist/app.js, so ../public is apps/server/public.
+    const adminPage = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      '../public/admin.html',
+    );
+    if (existsSync(adminPage)) {
+      app.get('/admin', (_req: Request, res: Response) => {
+        res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+        res.setHeader('Cache-Control', 'no-store');
+        res.sendFile(adminPage);
+      });
+      logger.info('admin dashboard enabled at /admin');
+    }
+  }
 
   /*
    * Serve the built web client from this same service when it is present.
