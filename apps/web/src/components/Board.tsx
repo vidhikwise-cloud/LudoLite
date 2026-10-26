@@ -577,7 +577,12 @@ export function Board({
                   : undefined
               }
             >
-              {canMove ? <circle r={0.52} className="token-halo" fill={colour} /> : null}
+              {/* A ring just outside the token's edge (r 0.34), not a disc
+                  around the whole square. `color` feeds the stroke so the
+                  ring takes the seat colour. */}
+              {canMove ? (
+                <circle r={0.43} className="token-halo" style={{ color: colour }} />
+              ) : null}
 
               {/*
                * A carrom-style counter, built in layers from the table up:

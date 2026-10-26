@@ -69,6 +69,40 @@ export function storedToken(): string | null {
   return localStorage.getItem(TOKEN_STORAGE);
 }
 
+/**
+ * Which player this device is.
+ *
+ * The session token is `base64url(JSON).signature`, and the payload carries
+ * the player id the server issued it for. Reading it is how the client
+ * knows which seat in a room is its own.
+ *
+ * This is a READ, never a claim. The signature is not checked here and the
+ * value is used only to decide what to highlight; every action still goes
+ * to the server with the token attached, and the server decides whether it
+ * is allowed. Forging this would change which token glows on one screen and
+ * nothing else.
+ */
+export function storedPlayerId(): string | null {
+  const token = storedToken();
+  if (!token) return null;
+
+  const body = token.split('.')[0];
+  if (!body) return null;
+
+  try {
+    // atob wants standard base64; the token uses base64url.
+    const normalised = body.replace(/-/g, '+').replace(/_/g, '/');
+    const payload: unknown = JSON.parse(atob(normalised));
+    if (typeof payload === 'object' && payload !== null) {
+      const id = (payload as Record<string, unknown>).playerId;
+      if (typeof id === 'string' && id !== '') return id;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 export function storeToken(token: string): void {
   localStorage.setItem(TOKEN_STORAGE, token);
 }

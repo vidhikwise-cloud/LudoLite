@@ -195,21 +195,47 @@ export function App() {
     socket.emit('room:start');
   }, [autoStart, room, screen, state, connection]);
 
+  /**
+   * Which seat belongs to THIS device.
+   *
+   * Must be matched against our own player id, taken from the session
+   * token. The previous version looked for "a room player who occupies a
+   * seat", which every seated player satisfies -- so it returned the first
+   * one in the list, i.e. the host, for everybody. On the host's phone that
+   * happened to be right and the bug was invisible; on a joiner's phone it
+   * meant the app believed it was the host, so the joiner's own tokens were
+   * never highlighted and their turn never looked like their turn.
+   *
+   * The server was always correct about whose turn it was and would have
+   * rejected a move from the wrong player. This was purely the client
+   * pointing at the wrong seat.
+   */
   const mySeat: SeatIndex | null = (() => {
     if (!room || !state) return null;
-    // The seat whose player id matches one of ours. The server told us the
-    // room; we never assert a seat ourselves.
-    const mine = room.players.find((p) =>
-      state.seats.some((s) => s.playerId === p.playerId && s.index === p.seat),
+
+    const myPlayerId = api.storedPlayerId();
+    if (!myPlayerId) return null;
+
+    const mine = room.players.find((p) => p.playerId === myPlayerId);
+    if (!mine) return null;
+
+    // Confirm the server also seats us there before trusting it.
+    const seated = state.seats.some(
+      (s) => s.index === mine.seat && s.playerId === myPlayerId,
     );
-    return mine ? mine.seat : null;
+    return seated ? mine.seat : null;
   })();
 
-  const isHost = Boolean(
-    room && state === null
-      ? room.players.find((p) => p.isHost && p.playerId === room.hostPlayerId)
-      : room && room.hostPlayerId,
-  );
+  /**
+   * Is THIS device the host.
+   *
+   * Same bug as mySeat had: the old version returned true whenever the room
+   * had any host at all, which is always, so every joiner saw the host's
+   * "Start Match" button. Pressing it did nothing useful -- the server
+   * rejects `room:start` from a non-host with NOT_HOST -- so a joiner got a
+   * button that looked live and then failed.
+   */
+  const isHost = Boolean(room && api.storedPlayerId() === room.hostPlayerId);
 
   /**
    * Records a finished match into local progression.
