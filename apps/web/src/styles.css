@@ -22,8 +22,12 @@
 
   /* Ground: a clean near-white with the faintest warmth, so the saturated
      colours have somewhere bright to sit. */
-  --paper: #fdfaf6;
-  --paper-2: #f4eee6;
+  /* Only a trace of warmth. #fdfaf6 was far enough into cream that the
+     whole app read yellowish on an OLED phone, and it fought the white
+     cards sitting on it. The colour should come from the game pieces, not
+     from the paper. */
+  --paper: #fcfbf9;
+  --paper-2: #f2eee9;
   --card: #ffffff;
 
   /* Ink is a very dark warm brown rather than black: softer against white
@@ -31,7 +35,11 @@
   --ink: #2a211d;
   --ink-2: #6d5f58;
   --ink-3: #9c8d85;
-  --rule: #ead9c7;
+  /* Borders and grid lines. #ead9c7 was a tan, and because it outlines
+     every card, chip and board square it tinted the whole interface warm.
+     A near-neutral grey with a hint of warmth does the same job without
+     colouring the page. */
+  --rule: #e6e1da;
 
   /* Seat colours. Brighter and more saturated than before -- these are the
      game's identity and they should read from across a table. */
@@ -1921,11 +1929,22 @@ body {
   padding: 32px 20px 28px;
   text-align: center;
   overflow: hidden;
+  /*
+   * Four corner washes, balanced by PERCEIVED weight rather than by equal
+   * numbers. Yellow is by far the brightest of the four against white, so
+   * matching it to the others numerically makes the bottom-right corner
+   * dominate and casts a yellow tint across the card. It is dialled well
+   * back; blue, the darkest, is nudged up to compensate.
+   *
+   * The washes also stop at 56% rather than 70%, which keeps the middle of
+   * the card genuinely white so the headline sits on white and not on a
+   * tint.
+   */
   background:
-    radial-gradient(60% 55% at 8% 4%, color-mix(in srgb, var(--red) 20%, transparent), transparent 70%),
-    radial-gradient(60% 55% at 95% 8%, color-mix(in srgb, var(--green) 20%, transparent), transparent 70%),
-    radial-gradient(62% 58% at 3% 96%, color-mix(in srgb, var(--blue) 19%, transparent), transparent 70%),
-    radial-gradient(62% 58% at 97% 94%, color-mix(in srgb, var(--yellow) 24%, transparent), transparent 70%),
+    radial-gradient(52% 48% at 6% 3%, color-mix(in srgb, var(--red) 17%, transparent), transparent 56%),
+    radial-gradient(52% 48% at 96% 6%, color-mix(in srgb, var(--green) 16%, transparent), transparent 56%),
+    radial-gradient(54% 50% at 3% 97%, color-mix(in srgb, var(--blue) 18%, transparent), transparent 56%),
+    radial-gradient(54% 50% at 97% 95%, color-mix(in srgb, var(--yellow) 13%, transparent), transparent 56%),
     #ffffff;
   border: 1px solid var(--rule);
   box-shadow: var(--lift-3), var(--sheen);
