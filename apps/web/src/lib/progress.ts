@@ -108,6 +108,8 @@ export interface ProgressState {
   readonly themes: readonly string[];
   readonly avatar: string;
   readonly theme: string;
+  /** Generated on first run; the player can change it in their profile. */
+  readonly name: string;
   /* Daily. */
   readonly day: string;
   readonly missions: readonly MissionProgress[];
@@ -181,6 +183,67 @@ export const AVATARS = [
 ] as const;
 
 export const DEFAULT_AVATAR = AVATARS[0];
+
+/* -------------------------------------------------------------------------- */
+/* Names                                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Word lists for generated names.
+ *
+ * Asking someone to invent a nickname before they can play is friction at
+ * the exact moment they are least invested, and an empty required field is
+ * the most common place a new player quits. So a name is generated up front
+ * and the field is pre-filled; changing it is one tap, which is the right
+ * order of operations.
+ *
+ * Deliberately gentle and non-aggressive: this is a game people play with
+ * family, and "SavageKiller99" is not the register. Nothing here can
+ * combine into anything crude -- that is a property of the word lists, and
+ * it is the reason they are hand-picked rather than generated.
+ */
+const NAME_ADJECTIVES = [
+  'Swift', 'Lucky', 'Clever', 'Bold', 'Sunny', 'Royal', 'Mighty', 'Gentle',
+  'Rapid', 'Bright', 'Noble', 'Cosmic', 'Silent', 'Golden', 'Fearless', 'Witty',
+  'Dashing', 'Breezy', 'Mellow', 'Spry',
+] as const;
+
+const NAME_NOUNS = [
+  'Tiger', 'Falcon', 'Panda', 'Comet', 'Otter', 'Maharaja', 'Rocket', 'Mango',
+  'Peacock', 'Dolphin', 'Lotus', 'Phoenix', 'Badger', 'Monsoon', 'Sparrow',
+  'Cheetah', 'Walrus', 'Kite', 'Bison', 'Heron',
+] as const;
+
+/**
+ * A fresh random display name, e.g. "Swift Peacock".
+ *
+ * A two-digit suffix lands on about a third of names: enough to break ties
+ * in a room where two people rolled the same pair, without making every
+ * name look auto-generated.
+ */
+export function randomName(): string {
+  const a = NAME_ADJECTIVES[Math.floor(Math.random() * NAME_ADJECTIVES.length)];
+  const n = NAME_NOUNS[Math.floor(Math.random() * NAME_NOUNS.length)];
+  const suffix = Math.random() < 0.34 ? ` ${10 + Math.floor(Math.random() * 90)}` : '';
+  return `${a} ${n}${suffix}`;
+}
+
+/** The stored name, generating and persisting one on first use. */
+export function displayName(state: ProgressState): string {
+  return state.name;
+}
+
+export function setName(prev: ProgressState, name: string): ProgressState {
+  const trimmed = name.trim().slice(0, MAX_NAME);
+  if (trimmed === '') return prev;
+  const next = { ...prev, name: trimmed };
+  saveProgress(next);
+  return next;
+}
+
+/** Matches the server's own limit, so a name cannot be accepted here and
+    rejected there. */
+export const MAX_NAME = 24;
 
 /* -------------------------------------------------------------------------- */
 /* Levels                                                                     */
@@ -260,6 +323,7 @@ function initial(): ProgressState {
     themes: ['classic'],
     avatar: DEFAULT_AVATAR,
     theme: 'classic',
+    name: randomName(),
     day: today(),
     missions: freshMissions(),
     streakDays: 0,
@@ -330,6 +394,12 @@ export function loadProgress(): ProgressState {
     themes: themes.includes('classic') ? themes : ['classic', ...themes],
     avatar,
     theme: themeId,
+    // An absent or blank stored name gets a fresh one rather than leaving
+    // the field empty, which is the state this feature exists to avoid.
+    name:
+      typeof s.name === 'string' && s.name.trim() !== ''
+        ? s.name.trim().slice(0, MAX_NAME)
+        : randomName(),
     day: typeof s.day === 'string' ? s.day : base.day,
     missions,
     streakDays: num(s.streakDays),

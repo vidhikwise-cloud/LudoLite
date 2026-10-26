@@ -1943,6 +1943,101 @@ body {
 }
 
 /* ========================================================================== */
+/* Profile                                                                    */
+/* ========================================================================== */
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 15px;
+}
+
+.profile-value {
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-name {
+  display: block;
+  font: 700 15.5px/1.25 var(--display);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.profile-sub {
+  display: block;
+  margin-top: 2px;
+  font: 400 12.5px/1.35 var(--body);
+  color: var(--ink-3);
+}
+
+.namerow {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  align-items: stretch;
+}
+
+.namerow .input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Both buttons are square-ish and sized to the field rather than full
+   width, so the row reads as one control instead of three stacked ones. */
+.namerow .namedice,
+.namerow .namesave {
+  width: auto;
+  flex: none;
+  padding: 0 14px;
+}
+
+.namerow .namedice {
+  font-size: 18px;
+}
+
+/* The avatar chip in the brand bar, which opens the profile. */
+.profilebtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 11px 5px 5px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  cursor: pointer;
+  transition: transform 160ms var(--ease), box-shadow 160ms var(--ease-out);
+}
+
+.profilebtn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--lift-2);
+}
+
+.profilebtn:active {
+  transform: scale(0.97);
+}
+
+.profilebtn-face {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  line-height: 1;
+  border-radius: 50%;
+  background: var(--paper-2);
+}
+
+.profilebtn-lvl {
+  font: 700 11.5px/1 var(--body);
+  color: var(--xp);
+  white-space: nowrap;
+}
+
+/* ========================================================================== */
 /* Premium surfaces                                                           */
 /* ========================================================================== */
 

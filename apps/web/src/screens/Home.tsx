@@ -11,7 +11,7 @@ import {
   StatGrid,
   ThemeSheet,
 } from '../components/Progress.js';
-import { setAvatar, setTheme, type ProgressState } from '../lib/progress.js';
+import { levelProgress, setAvatar, setTheme, type ProgressState } from '../lib/progress.js';
 
 /**
  * Home.
@@ -35,6 +35,7 @@ export function Home({
   config,
   progress,
   onProgressChange,
+  onOpenProfile,
   onCreate,
   onJoin,
   onPlayComputer,
@@ -42,6 +43,7 @@ export function Home({
   config: PublicConfig | null;
   progress: ProgressState;
   onProgressChange: (next: ProgressState) => void;
+  onOpenProfile: () => void;
   onCreate: () => void;
   onJoin: () => void;
   onPlayComputer: () => void;
@@ -54,6 +56,19 @@ export function Home({
   return (
     <>
       <BrandBar>
+        {/* The avatar chip is the profile entry point: a face and a level
+            read as "you" far faster than a labelled button would. */}
+        <button
+          type="button"
+          className="profilebtn"
+          onClick={onOpenProfile}
+          aria-label="Open your profile"
+        >
+          <span className="profilebtn-face" aria-hidden="true">
+            {progress.avatar}
+          </span>
+          <span className="profilebtn-lvl">Lv {levelProgress(progress.xp).level}</span>
+        </button>
         <MuteToggle />
       </BrandBar>
 

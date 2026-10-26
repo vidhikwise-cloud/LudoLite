@@ -21,12 +21,14 @@ import { JoinRoom } from './screens/JoinRoom.js';
 import { Legal } from './screens/Legal.js';
 import { Lobby } from './screens/Lobby.js';
 import { PlayComputer } from './screens/PlayComputer.js';
+import { Profile } from './screens/Profile.js';
 
 type Screen =
   | 'home'
   | 'create'
   | 'join'
   | 'computer'
+  | 'profile'
   | 'room'
   | 'privacy'
   | 'terms'
@@ -503,6 +505,7 @@ export function App() {
           config={config}
           progress={progress}
           onProgressChange={setProgress}
+          onOpenProfile={() => setScreen('profile')}
           onCreate={() => {
             setError(null);
             setScreen('create');
@@ -518,11 +521,20 @@ export function App() {
         />
       ) : null}
 
+      {screen === 'profile' ? (
+        <Profile
+          progress={progress}
+          onProgressChange={setProgress}
+          onBack={() => setScreen('home')}
+        />
+      ) : null}
+
       {screen === 'computer' ? (
         <PlayComputer
           busy={busy}
           error={error}
           onBack={() => setScreen('home')}
+          initialName={progress.name}
           onStart={(input) =>
             void handlePlayComputer({ ...input, funding: 'free' })
           }
@@ -535,6 +547,7 @@ export function App() {
           busy={busy}
           error={error}
           onBack={() => setScreen('home')}
+          initialName={progress.name}
           onCreate={handleCreate}
         />
       ) : null}
@@ -544,6 +557,7 @@ export function App() {
           busy={busy}
           error={error}
           initialCode={inviteCode}
+          initialName={progress.name}
           onBack={() => setScreen('home')}
           onJoin={handleJoin}
         />

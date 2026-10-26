@@ -13,16 +13,19 @@ export function JoinRoom({
   error,
   initialCode,
   onBack,
+  initialName,
   onJoin,
 }: {
   busy: boolean;
   error: string | null;
   initialCode?: string;
   onBack: () => void;
+  /** Pre-filled from the player's profile so the field is never empty. */
+  initialName: string;
   onJoin: (input: { code: string; displayName: string }) => void;
 }) {
   const [code, setCode] = useState(initialCode ?? '');
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(initialName);
 
   const canSubmit = code.trim().length >= 3 && displayName.trim().length > 0 && !busy;
 

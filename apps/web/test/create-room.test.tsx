@@ -41,6 +41,7 @@ function renderScreen(config: PublicConfig, onCreate = vi.fn()) {
       busy={false}
       error={null}
       onBack={() => {}}
+      initialName="Test Player"
       onCreate={onCreate}
     />,
   );
@@ -70,6 +71,7 @@ describe('when paid hosting is disabled', () => {
         busy={false}
         error={null}
         onBack={() => {}}
+        initialName="Test Player"
         onCreate={vi.fn()}
       />,
     );
@@ -88,6 +90,7 @@ describe('when paid hosting is disabled', () => {
     const user = userEvent.setup();
     const { onCreate } = renderScreen(DISABLED);
 
+    await user.clear(screen.getByLabelText(/your name/i));
     await user.type(screen.getByLabelText(/your name/i), 'Jasmin');
     await user.click(screen.getByRole('button', { name: /create free room/i }));
 
@@ -121,6 +124,7 @@ describe('when paid hosting is enabled', () => {
     const user = userEvent.setup();
     renderScreen(ENABLED);
 
+    await user.clear(screen.getByLabelText(/your name/i));
     await user.type(screen.getByLabelText(/your name/i), 'Jasmin');
 
     const pay = screen.getByRole('button', { name: /confirm and pay/i });
@@ -139,6 +143,7 @@ describe('when paid hosting is enabled', () => {
     const user = userEvent.setup();
     const { onCreate } = renderScreen(ENABLED);
 
+    await user.clear(screen.getByLabelText(/your name/i));
     await user.type(screen.getByLabelText(/your name/i), 'Jasmin');
     await user.click(screen.getByRole('checkbox'));
     await user.click(screen.getByRole('button', { name: /confirm and pay/i }));
@@ -177,6 +182,7 @@ describe('seat selection', () => {
     expect(screen.getByRole('radio', { name: /4/ })).toBeChecked();
 
     await user.click(screen.getByRole('radio', { name: /2/ }));
+    await user.clear(screen.getByLabelText(/your name/i));
     await user.type(screen.getByLabelText(/your name/i), 'Jasmin');
     await user.click(screen.getByRole('button', { name: /create free room/i }));
 

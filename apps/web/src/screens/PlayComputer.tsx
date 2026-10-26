@@ -37,11 +37,14 @@ export function PlayComputer({
   busy,
   error,
   onBack,
+  initialName,
   onStart,
 }: {
   busy: boolean;
   error: string | null;
   onBack: () => void;
+  /** Pre-filled from the player's profile so the field is never empty. */
+  initialName: string;
   onStart: (input: {
     seatCount: 2 | 4;
     displayName: string;
@@ -50,7 +53,7 @@ export function PlayComputer({
 }) {
   const [seatCount, setSeatCount] = useState<2 | 4>(4);
   const [level, setLevel] = useState<BotDifficulty>('normal');
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(initialName);
 
   const opponents = seatCount - 1;
   const canSubmit = displayName.trim().length > 0 && !busy;

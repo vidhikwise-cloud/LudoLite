@@ -20,12 +20,15 @@ export function CreateRoom({
   busy,
   error,
   onBack,
+  initialName,
   onCreate,
 }: {
   config: PublicConfig;
   busy: boolean;
   error: string | null;
   onBack: () => void;
+  /** Pre-filled from the player's profile so the field is never empty. */
+  initialName: string;
   onCreate: (input: {
     seatCount: 2 | 4;
     displayName: string;
@@ -38,7 +41,7 @@ export function CreateRoom({
   }) => void;
 }) {
   const [seatCount, setSeatCount] = useState<2 | 4>(4);
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(initialName);
   const [consented, setConsented] = useState(false);
 
   const paid = config.paidHostingEnabled;
