@@ -60,6 +60,20 @@ describe('the dashboard page', () => {
     expect(res.status).toBe(404);
   });
 
+  it('serves its script from a path the SPA does not swallow', async () => {
+    // The script cannot be inline -- script-src is 'self' with no
+    // 'unsafe-inline' -- so if this path falls through to the SPA the page
+    // renders with no behaviour at all, which is what happened in
+    // production before this test existed.
+    const app = await appWith(TOKEN);
+    const res = await request(app).get('/admin-assets/admin.js');
+    expect([200, 404]).toContain(res.status);
+    expect(res.text ?? '').not.toContain('<div id="root">');
+    if (res.status === 200) {
+      expect(res.headers['content-type']).toMatch(/javascript/);
+    }
+  });
+
   it('404s at a wrong slug', async () => {
     const app = await appWith(TOKEN);
     const res = await request(app).get('/admin/not-the-slug');

@@ -236,6 +236,29 @@ export function createApp(prisma: PrismaClient): express.Express {
       app.get(`/admin/${config.adminSlug}`, send);
 
       /*
+       * The page's script, served from its own path.
+       *
+       * It cannot be inline: the app sends script-src 'self' with no
+       * 'unsafe-inline', so an inline block is refused by the browser and
+       * the page renders with no behaviour at all. Weakening the policy
+       * for one internal page would weaken it for the whole game.
+       *
+       * Served from a path NOT under /admin/<slug>, because the slug is
+       * meant to stay out of logs and a script URL is logged like any
+       * other. The file holds no secrets -- it is the same fetch-and-
+       * render code whoever asks for it -- so a public path costs nothing.
+       */
+      const adminScript = resolve(
+        dirname(fileURLToPath(import.meta.url)),
+        '../public/admin.js',
+      );
+      app.get('/admin-assets/admin.js', (_req: Request, res: Response) => {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        res.setHeader('Cache-Control', 'no-store');
+        res.sendFile(adminScript);
+      });
+
+      /*
        * Bare /admin 404s rather than serving the login box.
        *
        * The slug's only job is to keep crawlers and idle visitors from
@@ -289,7 +312,7 @@ export function createApp(prisma: PrismaClient): express.Express {
      * dashboard that /admin/<something> is a live namespace. A 404 tells
      * them nothing.
      */
-    app.get(/^(?!\/(api|admin)(\/|$)).*/, (_req: Request, res: Response) => {
+    app.get(/^(?!\/(api|admin|admin-assets)(\/|$)).*/, (_req: Request, res: Response) => {
       res.sendFile(join(webDist, 'index.html'));
     });
 
