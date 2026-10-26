@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrandBar } from './components/Brand.js';
 import { ConnectionStatus, type ConnectionState } from './components/ConnectionStatus.js';
 import { MuteToggle } from './components/MuteToggle.js';
-import { RewardToasts, type RewardToast } from './components/Progress.js';
+import { RewardToasts, type RewardToast, type TallyLine } from './components/Progress.js';
 import * as api from './lib/api.js';
 import {
   loadProgress,
@@ -55,6 +55,18 @@ export function App() {
 
   const [progress, setProgress] = useState<ProgressState>(() => loadProgress());
   const [toasts, setToasts] = useState<readonly RewardToast[]>([]);
+
+  /**
+   * The breakdown shown on the victory screen.
+   *
+   * Kept separate from the toasts: toasts are transient and fire anywhere,
+   * while this is the itemised tally that belongs on the result screen and
+   * must survive until the player leaves it.
+   */
+  const [tally, setTally] = useState<{
+    readonly lines: readonly TallyLine[];
+    readonly total: number;
+  } | null>(null);
 
   /**
    * Guards against double-counting a finished match.
@@ -244,6 +256,25 @@ export function App() {
     const delta = recordMatch(progress, outcome);
     setProgress(delta.state);
 
+    /*
+     * Itemise where the XP came from. A single total invites "why?"; the
+     * breakdown answers it and doubles as a readout of what the player
+     * actually did this match.
+     */
+    const lines: TallyLine[] = [
+      { icon: outcome.won ? '🏆' : '🎲', label: outcome.won ? 'Match won' : 'Match played', amount: outcome.won ? 80 : 20 },
+    ];
+    if (outcome.captures > 0) {
+      lines.push({ icon: '⚔️', label: `${outcome.captures} token${outcome.captures === 1 ? '' : 's'} cut`, amount: outcome.captures * 10 });
+    }
+    if (outcome.finished > 0) {
+      lines.push({ icon: '🏠', label: `${outcome.finished} brought home`, amount: outcome.finished * 5 });
+    }
+    for (const a of delta.unlocked) {
+      lines.push({ icon: a.icon, label: a.name, amount: a.xp });
+    }
+    setTally({ lines, total: delta.xpGained });
+
     const next: RewardToast[] = [];
     if (delta.xpGained > 0) {
       next.push({
@@ -358,6 +389,7 @@ export function App() {
     setState(null);
     setLastDie(null);
     setError(null);
+    setTally(null);
     setScreen('home');
   }
 
@@ -450,7 +482,14 @@ export function App() {
   }
 
   return (
-    <div className="shell">
+    /*
+     * The chosen board theme is published here as a data attribute, and the
+     * theme rules in styles.css override the board's own custom properties
+     * under it. The board keeps reading `var(--board-felt)` and friends and
+     * knows nothing about themes, so a new theme is a block of CSS rather
+     * than a change to the renderer.
+     */
+    <div className="shell" data-theme={progress.theme}>
       {/* Sound matters most in a room, so the control lives there and on
           home. Home renders its own inside the brand bar. */}
       {screen === 'room' ? (
@@ -530,6 +569,8 @@ export function App() {
             onLeave={leave}
             onRematch={handleRematch}
             onReact={handleReact}
+            tally={tally}
+            progress={progress}
           />
         ) : (
           <Lobby

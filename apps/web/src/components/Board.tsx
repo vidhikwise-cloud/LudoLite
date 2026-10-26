@@ -179,6 +179,24 @@ export function Board({
   const [capturing, setCapturing] = useState<Set<TokenKey>>(new Set());
   const [landing, setLanding] = useState<TokenKey | null>(null);
 
+  /**
+   * True for the first moment of a match, which plays the deal-in.
+   *
+   * Keyed on matchId so it runs once per match rather than on every mount:
+   * a reconnect mid-game re-mounts the board, and replaying the opening
+   * there would look like the match restarting.
+   */
+  const [dealing, setDealing] = useState(true);
+  const dealtFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (dealtFor.current === state.matchId) return;
+    dealtFor.current = state.matchId;
+    setDealing(true);
+    const id = window.setTimeout(() => setDealing(false), 1150);
+    return () => window.clearTimeout(id);
+  }, [state.matchId]);
+
   const timers = useRef<number[]>([]);
   const previous = useRef<MatchState>(state);
 
@@ -291,7 +309,7 @@ export function Board({
   return (
     <div className="board-wrap">
       <svg
-        className="board"
+        className={`board${dealing ? ' dealing' : ''}`}
         viewBox={`0 0 ${GRID} ${GRID}`}
         role="img"
         aria-label="Ludo board"
@@ -430,7 +448,7 @@ export function Board({
                 width={4.2}
                 height={4.2}
                 rx={0.4}
-                fill="var(--card)"
+                fill="var(--board-well, var(--card))"
                 opacity={0.82}
               />
               {/* Inset shading: dark along the top inner edge, light along
@@ -495,7 +513,7 @@ export function Board({
               rx={0.12}
               fill={`var(--${SEAT_COLOR_BY_INDEX[seat]})`}
               opacity={0.3 + step * 0.1}
-              stroke="var(--rule)"
+              stroke="var(--board-line, var(--rule))"
               strokeWidth={0.04}
             />
           )),
@@ -534,6 +552,7 @@ export function Board({
           return (
             <g
               key={token.key}
+              data-seat={token.seat}
               className={classes}
               /*
                * The SVG transform attribute, not a CSS transform: inside a

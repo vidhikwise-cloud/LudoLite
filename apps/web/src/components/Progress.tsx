@@ -389,6 +389,108 @@ export function RewardToasts({ toasts }: { toasts: readonly RewardToast[] }) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Post-match XP tally                                                        */
+/* -------------------------------------------------------------------------- */
+
+export interface TallyLine {
+  readonly icon: string;
+  readonly label: string;
+  readonly amount: number;
+}
+
+/**
+ * The reward moment at the end of a match.
+ *
+ * The total counts up from zero and the bar fills behind it, because
+ * watching a number climb is most of what makes a reward feel like one --
+ * the same figure printed statically reads as a receipt.
+ *
+ * The count is driven by requestAnimationFrame against elapsed time rather
+ * than a fixed per-frame step, so it takes the same ~900ms on a slow device
+ * as on a fast one instead of crawling.
+ */
+export function XpTally({
+  lines,
+  total,
+  progress,
+}: {
+  lines: readonly TallyLine[];
+  total: number;
+  progress: ProgressState;
+}) {
+  const [shownTotal, setShownTotal] = useState(0);
+  const [barPct, setBarPct] = useState(0);
+
+  const { level, into, need, pct } = levelProgress(progress.xp);
+
+  useEffect(() => {
+    if (total <= 0) {
+      setShownTotal(0);
+      return;
+    }
+    const DURATION = 900;
+    const START_DELAY = 700; // let the crest land first
+    let raf = 0;
+    let startedAt = 0;
+
+    const step = (now: number) => {
+      if (startedAt === 0) startedAt = now;
+      const elapsed = now - startedAt;
+      // Ease out: fast at first, settling at the end.
+      const t = Math.min(1, elapsed / DURATION);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setShownTotal(Math.round(total * eased));
+      if (t < 1) raf = requestAnimationFrame(step);
+    };
+
+    const timer = window.setTimeout(() => {
+      raf = requestAnimationFrame(step);
+      setBarPct(pct);
+    }, START_DELAY);
+
+    return () => {
+      window.clearTimeout(timer);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [total, pct]);
+
+  return (
+    <div className="xptally">
+      <div className="xptally-value">+{shownTotal}</div>
+      <div className="xptally-label">Experience earned</div>
+
+      <div className="xptally-rows">
+        {lines.map((l, i) => (
+          <div
+            className="xptally-row"
+            key={`${l.label}-${i}`}
+            /* Each row arrives just after the one above it. */
+            style={{ animationDelay: `${0.8 + i * 0.12}s` }}
+          >
+            <span aria-hidden="true">{l.icon}</span>
+            <span>{l.label}</span>
+            <span className="amt">+{l.amount}</span>
+          </div>
+        ))}
+      </div>
+
+      <div
+        className="xptally-bar"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={need}
+        aria-valuenow={into}
+      >
+        <span style={{ width: `${barPct}%` }} />
+      </div>
+      <div className="xptally-level">
+        Level {level} · {need - into} XP to level {level + 1}
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /* Quick reactions                                                            */
 /* -------------------------------------------------------------------------- */
 

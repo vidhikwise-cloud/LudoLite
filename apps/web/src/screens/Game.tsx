@@ -11,7 +11,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board.js';
 import { Confetti } from '../components/Confetti.js';
 import { Dice, ROLL_MS } from '../components/Dice.js';
-import { ReactionBar } from '../components/Progress.js';
+import { ReactionBar, XpTally, type TallyLine } from '../components/Progress.js';
+import type { ProgressState } from '../lib/progress.js';
 import { sfx } from '../lib/feedback.js';
 
 /**
@@ -31,6 +32,8 @@ export function Game({
   onLeave,
   onRematch,
   onReact,
+  tally,
+  progress,
 }: {
   room: RoomView;
   state: MatchState;
@@ -41,6 +44,8 @@ export function Game({
   onLeave: () => void;
   onRematch: () => void;
   onReact: (emoji: string) => void;
+  tally: { readonly lines: readonly TallyLine[]; readonly total: number } | null;
+  progress: ProgressState;
 }) {
   const [rolling, setRolling] = useState(false);
   const wasMyTurn = useRef(false);
@@ -83,6 +88,8 @@ export function Game({
         onLeave={onLeave}
         onRematch={onRematch}
         onReact={onReact}
+        tally={tally}
+        progress={progress}
       />
     );
   }
@@ -192,6 +199,8 @@ function MatchOver({
   onLeave,
   onRematch,
   onReact,
+  tally,
+  progress,
 }: {
   room: RoomView;
   state: MatchState;
@@ -199,6 +208,8 @@ function MatchOver({
   onLeave: () => void;
   onRematch: () => void;
   onReact: (emoji: string) => void;
+  tally: { readonly lines: readonly TallyLine[]; readonly total: number } | null;
+  progress: ProgressState;
 }) {
   const iWon = mySeat !== null && state.winnerSeat === mySeat;
   const winner = room.players.find((p) => p.seat === state.winnerSeat);
@@ -269,6 +280,10 @@ function MatchOver({
           );
         })}
       </ol>
+
+      {tally ? (
+        <XpTally lines={tally.lines} total={tally.total} progress={progress} />
+      ) : null}
 
       {/*
         Rematch is the primary action, not "back to home".

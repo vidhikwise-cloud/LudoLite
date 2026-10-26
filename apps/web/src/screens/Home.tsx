@@ -57,16 +57,43 @@ export function Home({
         <MuteToggle />
       </BrandBar>
 
-      <div className="hero">
-        <span className="hero-kicker">Private rooms · No ads</span>
-        <h1>
-          Ludo With Friends.
-          <br />
-          <span className="rupee">₹1</span> per hosted match.
-        </h1>
-        <p className="sub">
-          Create a room, share the code, play. Only the host pays — everyone else joins free.
-        </p>
+      {/*
+        The stage. Four tokens run a lap of the border while the mark floats
+        above the headline, so the first thing on screen is motion rather
+        than a paragraph. All of it is decorative and hidden from assistive
+        tech -- the heading and the buttons are the actual content.
+      */}
+      <div className="stage">
+        <div className="stage-track" aria-hidden="true">
+          <span className="stage-tok s0" />
+          <span className="stage-tok s1" />
+          <span className="stage-tok s2" />
+          <span className="stage-tok s3" />
+        </div>
+
+        <div className="stage-inner">
+          <div className="stage-mark" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+            <i />
+          </div>
+
+          <h1>
+            Ludo With Friends.
+            <br />
+            <span className="rupee">₹1</span> per hosted match.
+          </h1>
+          <p className="sub">
+            Create a room, share the code, play. Only the host pays — everyone else joins free.
+          </p>
+
+          <div className="stage-chips">
+            <span className="stage-chip">🚫 Zero ads</span>
+            <span className="stage-chip">🔒 Private rooms</span>
+            <span className="stage-chip">🎲 No cash prizes</span>
+          </div>
+        </div>
       </div>
 
       <div className="btn-stack">
