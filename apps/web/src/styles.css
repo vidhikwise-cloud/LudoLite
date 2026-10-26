@@ -1907,232 +1907,393 @@ body {
 /* ==========================================================================
  * Landing hero
  *
- * The first screen has about two seconds to say "this is a game". A static
- * headline on a card does not; four tokens racing a loop does, and it costs
- * four divs and one keyframe.
+ * An arcade title, a tilted board with bouncing pawns, a feature row and
+ * one big call to action -- in the project's LIGHT palette. The reference
+ * art for this screen is dark navy; the app is light-only by decision (see
+ * the top of this file), and one dark screen in a light app reads as a bug
+ * rather than as drama. The structure and the energy are what carry over.
  *
- * Everything here is decorative and `aria-hidden` in the markup, so the
- * screen reader experience is the heading and the buttons -- unchanged.
+ * Every decorative element here is aria-hidden in the markup.
  * ========================================================================== */
 
-/*
- * The hero is the one place colour leads rather than supports.
- *
- * Four soft colour washes -- one per seat -- bloom from the corners of a
- * white card. The result is bright and unmistakably a game, while the text
- * still sits on near-white so it stays easy to read. A flat tinted panel
- * would have been simpler and would have read as a notice board.
- */
-.stage {
+.hero {
   position: relative;
   border-radius: var(--radius-xl);
-  padding: 32px 20px 28px;
+  padding: 20px 18px 24px;
   text-align: center;
   overflow: hidden;
-  /*
-   * Four corner washes, balanced by PERCEIVED weight rather than by equal
-   * numbers. Yellow is by far the brightest of the four against white, so
-   * matching it to the others numerically makes the bottom-right corner
-   * dominate and casts a yellow tint across the card. It is dialled well
-   * back; blue, the darkest, is nudged up to compensate.
-   *
-   * The washes also stop at 56% rather than 70%, which keeps the middle of
-   * the card genuinely white so the headline sits on white and not on a
-   * tint.
-   */
   background:
-    radial-gradient(52% 48% at 6% 3%, color-mix(in srgb, var(--red) 17%, transparent), transparent 56%),
-    radial-gradient(52% 48% at 96% 6%, color-mix(in srgb, var(--green) 16%, transparent), transparent 56%),
-    radial-gradient(54% 50% at 3% 97%, color-mix(in srgb, var(--blue) 18%, transparent), transparent 56%),
-    radial-gradient(54% 50% at 97% 95%, color-mix(in srgb, var(--yellow) 13%, transparent), transparent 56%),
-    #ffffff;
+    radial-gradient(70% 60% at 50% -14%, #fff 0%, transparent 62%),
+    radial-gradient(46% 42% at 4% 4%, color-mix(in srgb, var(--red) 15%, transparent), transparent 62%),
+    radial-gradient(46% 42% at 97% 6%, color-mix(in srgb, var(--green) 14%, transparent), transparent 62%),
+    radial-gradient(48% 44% at 2% 98%, color-mix(in srgb, var(--blue) 15%, transparent), transparent 62%),
+    radial-gradient(48% 44% at 98% 96%, color-mix(in srgb, var(--yellow) 12%, transparent), transparent 62%),
+    #fff;
   border: 1px solid var(--rule);
   box-shadow: var(--lift-3), var(--sheen);
 }
 
-/* The track the demo tokens run on. */
-.stage-track {
+/* --- drifting background objects ---------------------------------------- */
+
+.hero-sky {
   position: absolute;
-  inset: 14px;
-  border-radius: calc(var(--radius-xl) - 8px);
-  border: 2px dashed color-mix(in srgb, var(--ink-3) 26%, transparent);
+  inset: 0;
   pointer-events: none;
 }
 
-.stage-tok {
+.hero-float {
   position: absolute;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  top: -8px;
-  left: -8px;
-  box-shadow:
-    inset 0 2px 2px rgba(255, 255, 255, 0.6),
-    inset 0 -3px 3px rgba(0, 0, 0, 0.3),
-    0 2px 4px rgba(35, 28, 26, 0.4);
-  /* offset-path walks the element around the rounded rect; the four tokens
-     differ only by negative delay, so they stay evenly spaced forever. */
-  offset-path: inset(0 round calc(var(--radius-xl) - 8px));
-  animation: stageLap 14s linear infinite;
+  font-size: 30px;
+  opacity: 0.16;
+  animation: heroDrift 13s ease-in-out infinite;
 }
 
-@supports not (offset-path: inset(0)) {
-  /* Older WebViews get a static dot in the corner rather than a token
-     stuck at the origin. minSdk here is 22. */
-  .stage-tok {
-    display: none;
-  }
+.hero-float.f1 { top: 12%; left: 5%; animation-delay: 0s; }
+.hero-float.f2 { top: 26%; right: 6%; font-size: 24px; animation-delay: -3.5s; }
+.hero-float.f3 { bottom: 24%; left: 8%; font-size: 26px; animation-delay: -7s; }
+.hero-float.f4 { bottom: 14%; right: 9%; font-size: 22px; animation-delay: -10s; }
+
+@keyframes heroDrift {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-16px) rotate(14deg); }
 }
 
-@keyframes stageLap {
-  to {
-    offset-distance: 100%;
-  }
-}
+.hero > *:not(.hero-sky) { position: relative; }
 
-.stage-tok.s0 {
-  background: var(--red);
-  animation-delay: 0s;
-}
-.stage-tok.s1 {
-  background: var(--green);
-  animation-delay: -3.5s;
-}
-.stage-tok.s2 {
-  background: var(--yellow);
-  animation-delay: -7s;
-}
-.stage-tok.s3 {
-  background: var(--blue);
-  animation-delay: -10.5s;
-}
+/* --- online indicator ---------------------------------------------------- */
 
-.stage > .stage-inner {
-  position: relative;
-}
-
-/* The player's own character, centre stage. */
-.stage-buddy {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-  animation: buddyEnter 620ms var(--ease) both;
-}
-
-@keyframes buddyEnter {
-  0% { opacity: 0; transform: translateY(-16px) scale(0.6) rotate(-12deg); }
-  60% { opacity: 1; transform: translateY(0) scale(1.08) rotate(4deg); }
-  100% { opacity: 1; transform: none; }
-}
-
-/* What the character is saying on the landing page. Quieter than the
-   sub-head: it is flavour, not instruction. */
-.stage-says {
-  margin: 14px 0 0;
-  font: 600 13px/1.35 var(--body);
-  color: var(--ink-3);
-  font-style: italic;
-}
-
-/* Compact reassurance chips. */
-.promise-chips {
-  display: flex;
-  flex-wrap: wrap;
+.hero-online {
+  display: inline-flex;
+  align-items: center;
   gap: 7px;
-  justify-content: center;
-}
-
-.promise-chip {
-  font: 600 12px/1 var(--body);
+  font: 700 11.5px/1 var(--body);
   color: var(--ink-2);
   background: var(--card);
   border: 1px solid var(--rule);
   box-shadow: var(--lift-1);
-  padding: 9px 13px;
+  padding: 7px 12px;
   border-radius: 999px;
-  white-space: nowrap;
+  margin-bottom: 14px;
 }
 
-/* The mark above the headline, breathing gently. */
-/* Rows stated explicitly: with only columns defined, implicit row sizing let
-   one dot break out of the 2x2 and float above the group. */
-.stage-mark {
-  width: 72px;
-  height: 72px;
-  margin: 0 auto 18px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 7px;
-  animation: markFloat 4.5s ease-in-out infinite;
-}
-
-.stage-mark i {
+.hero-dot {
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  box-shadow:
-    inset 0 2px 2px rgba(255, 255, 255, 0.55),
-    inset 0 -3px 4px rgba(0, 0, 0, 0.28),
-    0 2px 5px rgba(35, 28, 26, 0.3);
+  background: var(--green);
+  animation: heroPing 2.2s ease-out infinite;
 }
 
-.stage-mark i:nth-child(1) {
-  background: var(--red);
+@keyframes heroPing {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 55%, transparent); }
+  70% { box-shadow: 0 0 0 7px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
 }
-.stage-mark i:nth-child(2) {
-  background: var(--green);
+
+/* --- crown + title ------------------------------------------------------- */
+
+.hero-crown {
+  font-size: 36px;
+  line-height: 1;
+  margin-bottom: -8px;
+  animation: crownBob 3.4s ease-in-out infinite;
+  filter: drop-shadow(0 4px 8px rgba(214, 160, 20, 0.45));
 }
-.stage-mark i:nth-child(3) {
-  background: var(--blue);
+
+@keyframes crownBob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-7px) rotate(4deg); }
 }
-.stage-mark i:nth-child(4) {
+
+.hero-title { margin: 0; }
+
+.hero-word {
+  display: flex;
+  justify-content: center;
+  gap: clamp(2px, 1.2vw, 7px);
+}
+
+/*
+ * Each letter is a solid colour with a hard lower edge, which is what
+ * makes a wordmark read as moulded plastic rather than as text. Three
+ * stacked shadows: the extruded side, a contact shadow, and a soft glow in
+ * the letter's own colour.
+ */
+.hero-letter {
+  display: inline-block;
+  font: 900 clamp(52px, 17vw, 86px) / 0.92 var(--display);
+  letter-spacing: -0.02em;
+  color: var(--seat);
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--seat) 55%, #2a211d);
+  text-shadow:
+    0 5px 0 color-mix(in srgb, var(--seat) 50%, #2a211d),
+    0 9px 16px rgba(42, 33, 29, 0.28),
+    0 0 26px color-mix(in srgb, var(--seat) 40%, transparent);
+  animation: letterPop 0.62s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+@keyframes letterPop {
+  0% { opacity: 0; transform: translateY(-26px) scale(0.5) rotate(-12deg); }
+  62% { opacity: 1; transform: translateY(5px) scale(1.12) rotate(4deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+.hero-kicker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 10px 0 8px;
+  font: 800 clamp(16px, 4.6vw, 21px) / 1 var(--display);
+  color: var(--ink);
+}
+
+.hero-kicker i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
   background: var(--yellow);
 }
 
-@keyframes markFloat {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-7px) rotate(4deg);
-  }
-}
+.hero-kicker .win { color: var(--yellow); }
 
-.stage h1 {
-  font: 800 clamp(27px, 7.6vw, 40px) / 1.1 var(--display);
-  letter-spacing: -0.025em;
-  margin: 0 0 11px;
-  color: var(--ink);
-  text-wrap: balance;
-}
-
-.stage .sub {
-  margin: 0 auto;
-  max-width: 30ch;
-  font-size: 15px;
+.hero-tag {
+  margin: 0 auto 18px;
+  max-width: 28ch;
+  font-size: 14px;
   line-height: 1.5;
   color: var(--ink-2);
 }
 
-/* Trust row under the headline: the three constraints, as chips. */
-.stage-chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 16px;
+/* --- board + pawns + die ------------------------------------------------- */
+
+.hero-stage {
+  position: relative;
+  width: min(300px, 82%);
+  margin: 0 auto 22px;
+  aspect-ratio: 1;
+  /* A slight tilt; the reference shows the board in perspective and a flat
+     square loses most of the depth. */
+  transform: perspective(760px) rotateX(16deg);
 }
 
-.stage-chip {
-  font: 600 11.5px/1 var(--body);
-  color: var(--ink-2);
-  background: var(--card);
+.hero-board {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8%;
+  padding: 7%;
+  border-radius: 18px;
+  background: #fff;
   border: 1px solid var(--rule);
-  box-shadow: var(--lift-1);
-  padding: 7px 11px;
-  border-radius: 999px;
-  white-space: nowrap;
+  box-shadow:
+    0 14px 0 var(--wood-2),
+    0 26px 34px -12px rgba(42, 33, 29, 0.4),
+    var(--sheen);
 }
+
+.hero-board .q {
+  border-radius: 11px;
+  box-shadow: var(--sheen);
+}
+
+.q-red { background: color-mix(in srgb, var(--red) 82%, #fff); }
+.q-green { background: color-mix(in srgb, var(--green) 82%, #fff); }
+.q-blue { background: color-mix(in srgb, var(--blue) 82%, #fff); }
+.q-yellow { background: color-mix(in srgb, var(--yellow) 82%, #fff); }
+
+/* The centre home, as four triangles. */
+.hero-cross {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 24%;
+  height: 24%;
+  transform: translate(-50%, -50%);
+  background:
+    conic-gradient(
+      var(--green) 0deg 90deg,
+      var(--yellow) 90deg 180deg,
+      var(--blue) 180deg 270deg,
+      var(--red) 270deg 360deg
+    );
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(42, 33, 29, 0.3);
+}
+
+.hero-pawns {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  place-items: center;
+  padding: 9%;
+  pointer-events: none;
+}
+
+.hero-pawn {
+  width: 34%;
+  max-width: 54px;
+  filter: drop-shadow(0 6px 8px rgba(42, 33, 29, 0.3));
+  animation: pawnBounce 2.3s cubic-bezier(0.3, 1.3, 0.5, 1) infinite;
+}
+
+@keyframes pawnBounce {
+  0%, 62%, 100% { transform: translateY(0) scale(1, 1); }
+  12% { transform: translateY(1px) scale(1.07, 0.93); }
+  34% { transform: translateY(-13px) scale(0.95, 1.06); }
+  50% { transform: translateY(1px) scale(1.05, 0.95); }
+}
+
+.hero-diewrap {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  width: 26%;
+  transform: translate(-50%, -50%);
+  animation: dieTumble 4.2s cubic-bezier(0.4, 0, 0.3, 1) infinite;
+}
+
+.hero-die {
+  width: 100%;
+  filter: drop-shadow(0 8px 12px rgba(42, 33, 29, 0.4));
+}
+
+@keyframes dieTumble {
+  0%, 56%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  12% { transform: translate(-50%, -78%) rotate(-100deg) scale(1.12); }
+  26% { transform: translate(-50%, -34%) rotate(-205deg) scale(0.95); }
+  40% { transform: translate(-50%, -56%) rotate(-330deg) scale(1.04); }
+  50% { transform: translate(-50%, -50%) rotate(-360deg) scale(1); }
+}
+
+/* --- feature row --------------------------------------------------------- */
+
+.hero-features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  list-style: none;
+  margin: 0 0 20px;
+  padding: 0;
+}
+
+.hero-features li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-feature-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--seat) 13%, #fff);
+  border: 2px solid color-mix(in srgb, var(--seat) 45%, #fff);
+  box-shadow: var(--lift-1), var(--sheen);
+  transition: transform 220ms var(--ease);
+}
+
+.hero-features li:hover .hero-feature-icon {
+  transform: translateY(-4px) scale(1.07);
+}
+
+.hero-feature-label {
+  font: 700 11px/1.3 var(--body);
+  color: var(--ink-2);
+  white-space: pre-line;
+  text-align: center;
+}
+
+/* --- call to action ------------------------------------------------------ */
+
+.hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+  width: 100%;
+  max-width: 320px;
+  padding: 17px 26px;
+  border: 0;
+  border-radius: 999px;
+  font: 800 19px/1 var(--display);
+  color: #3a2a05;
+  cursor: pointer;
+  background: linear-gradient(180deg, #ffd34d 0%, var(--yellow) 56%, #e09a07 100%);
+  /* A solid lower edge plus a shadow: the button has a side, so pressing
+     it can travel that side's height and read as a real press. */
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.85),
+    0 6px 0 #b87c06,
+    0 14px 22px -8px rgba(184, 124, 6, 0.6);
+  transition: transform 140ms var(--ease), box-shadow 140ms var(--ease-out);
+  animation: ctaPulse 2.8s ease-in-out infinite;
+}
+
+.hero-cta:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.85),
+    0 8px 0 #b87c06,
+    0 18px 28px -8px rgba(184, 124, 6, 0.65);
+}
+
+.hero-cta:active {
+  transform: translateY(6px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.7),
+    0 0 0 #b87c06,
+    0 2px 6px rgba(184, 124, 6, 0.5);
+  animation: none;
+}
+
+.hero-cta:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+@keyframes ctaPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.07); }
+}
+
+.hero-cta-arrow {
+  transition: transform 200ms var(--ease);
+}
+
+.hero-cta:hover .hero-cta-arrow {
+  transform: translateX(4px);
+}
+
+/* Visually hidden but read aloud: the wordmark is per-letter spans, which
+   a screen reader would otherwise announce one letter at a time. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (min-width: 560px) {
+  .hero { padding: 28px 28px 30px; }
+  .hero-stage { width: min(360px, 70%); }
+  .hero-feature-icon { width: 54px; height: 54px; font-size: 24px; }
+  .hero-feature-label { font-size: 12px; }
+}
+
 
 /* ==========================================================================
  * Victory extras
@@ -3440,5 +3601,23 @@ button.mission-xp:hover {
 
   .confetti {
     display: none;
+  }
+
+  /*
+   * The hero's drifting dice are decoration with no informational value,
+   * so they go entirely rather than freezing mid-drift at whatever angle
+   * the animation happened to stop at.
+   *
+   * The pawns, the die and the title STAY -- stopped, not hidden. They are
+   * the picture of the game, and removing them would leave a hero with a
+   * headline and an empty space.
+   */
+  .hero-float {
+    display: none;
+  }
+
+  .hero-letter {
+    opacity: 1;
+    transform: none;
   }
 }

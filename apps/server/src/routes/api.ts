@@ -14,6 +14,7 @@ import { audit } from '../audit.js';
 import { issuePlayerToken, upsertPlayer, verifyPlayerToken } from '../auth.js';
 import { config } from '../config.js';
 import { ApiError } from '../errors.js';
+import { presenceCount } from '../presence.js';
 import { publicGateView, resolvePaidHostingGate } from '../payments/gate.js';
 import {
   ensureHostingFeeOrder,
@@ -79,6 +80,18 @@ export function apiRouter(prisma: PrismaClient): Router {
   // -------------------------------------------------------------------------
   // Config — the client renders payment UI only from this.
   // -------------------------------------------------------------------------
+  /**
+   * How many people are connected right now.
+   *
+   * In-memory and per-process -- see presence.ts. Cheap enough to poll,
+   * which matters because the landing page does exactly that, and it never
+   * touches the database.
+   */
+  router.get('/presence', (_req: Request, res: Response) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.json({ online: presenceCount() });
+  });
+
   router.get('/config', wrap(async (_req: Request, res: Response) => {
     const gate = await resolvePaidHostingGate(prisma);
     const view = publicGateView(gate);

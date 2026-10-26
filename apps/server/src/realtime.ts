@@ -21,6 +21,12 @@ import { config } from './config.js';
 import { ApiError } from './errors.js';
 import { log } from './logger.js';
 import { runBotTurns } from './match/bot-runner.js';
+import {
+  presenceConnected,
+  presenceDisconnected,
+  presenceIdentified,
+  presenceLeft,
+} from './presence.js';
 import { forfeit, getMatchState, moveToken, rollDice, startMatch } from './match/service.js';
 import { loadRoom, markConnected, toRoomView } from './rooms/service.js';
 
@@ -147,6 +153,7 @@ export function attachRealtime(httpServer: HttpServer, prisma: PrismaClient): Se
   }
 
   io.on('connection', (socket: GameSocket) => {
+    presenceConnected();
     socket.data.playerId = null;
     socket.data.roomId = null;
     socket.data.actionCount = 0;
@@ -172,6 +179,14 @@ export function attachRealtime(httpServer: HttpServer, prisma: PrismaClient): Se
         // client from accumulating subscriptions to rooms it has left.
         if (socket.data.roomId && socket.data.roomId !== roomId) {
           await socket.leave(socket.data.roomId);
+        }
+
+        // Count this socket against the player rather than as anonymous.
+        // Guarded: room:join can arrive twice on a flaky connection, and
+        // identifying twice would count one person as two.
+        if (socket.data.playerId !== playerId) {
+          if (socket.data.playerId) presenceLeft(socket.data.playerId);
+          presenceIdentified(playerId);
         }
 
         socket.data.playerId = playerId;
@@ -275,6 +290,13 @@ export function attachRealtime(httpServer: HttpServer, prisma: PrismaClient): Se
 
     socket.on('disconnect', async (reason) => {
       const { roomId, playerId } = socket.data;
+
+      // Presence first, and unconditionally: a socket that never joined a
+      // room still counted as anonymous and must be released, or the count
+      // only ever climbs.
+      if (playerId) presenceLeft(playerId);
+      else presenceDisconnected();
+
       if (!roomId || !playerId) return;
       try {
         // Mark disconnected but do NOT forfeit. A dropped connection is

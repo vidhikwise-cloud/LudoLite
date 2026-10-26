@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { PublicConfig } from '@ludolite/shared';
 
 import { LudoMark } from '../components/Brand.js';
-import { Mascot, mascotLine } from '../components/Mascot.js';
+import { Hero } from '../components/Hero.js';
 import { MuteToggle } from '../components/MuteToggle.js';
 import {
   AvatarSheet,
@@ -87,33 +87,9 @@ export function Home({
         </div>
       </header>
 
-      {/*
-        The stage. Four tokens run a lap of the border and the player's own
-        character waves from the middle, so the first thing on screen is
-        something alive. All decorative and hidden from assistive tech.
-      */}
-      <div className="stage">
-        <div className="stage-track" aria-hidden="true">
-          <span className="stage-tok s0" />
-          <span className="stage-tok s1" />
-          <span className="stage-tok s2" />
-          <span className="stage-tok s3" />
-        </div>
-
-        <div className="stage-inner">
-          <div className="stage-buddy">
-            <Mascot avatar={progress.avatar} mood="happy" size={96} />
-          </div>
-
-          <h1>Roll. Chase. Win.</h1>
-          <p className="sub">
-            Private Ludo rooms for you and your friends. Create a room, share the
-            code, play.
-          </p>
-
-          <p className="stage-says">{mascotLine('idle', progress.played)}</p>
-        </div>
-      </div>
+      {/* The hero. Play Now drops the player straight into the existing
+          mode choices below rather than inventing a new screen. */}
+      <Hero onPlay={onCreate} />
 
       <div className="btn-stack">
         <button type="button" className="btn btn-primary btn-rich" onClick={onCreate}>

@@ -138,6 +138,18 @@ export function fetchConfig(): Promise<PublicConfig> {
   return request<PublicConfig>('/config');
 }
 
+/**
+ * How many people are connected right now.
+ *
+ * A real number from the server, not a decoration. It will read 1 or 2
+ * early on, which is the honest answer; the alternative is inventing a
+ * figure, which collapses the moment anyone checks.
+ */
+export async function fetchPresence(): Promise<number> {
+  const body = await request<{ online: number }>('/presence');
+  return typeof body.online === 'number' ? body.online : 0;
+}
+
 export async function createRoom(input: {
   seatCount: 2 | 4;
   displayName: string;
