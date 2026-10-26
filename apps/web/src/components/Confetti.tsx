@@ -23,7 +23,19 @@ interface Piece {
 
 const COLOURS = ['--red', '--green', '--yellow', '--blue'];
 
-export function Confetti({ active }: { active: boolean }) {
+export function Confetti({
+  active,
+  style = 'confetti',
+}: {
+  active: boolean;
+  /**
+   * Which celebration to draw. Unlocked by level; see CELEBRATIONS in
+   * lib/progress.ts. Every style uses the same physics and the same four
+   * seat colours -- only the shape and the gravity change -- so a rarer
+   * one looks different without looking like a different game.
+   */
+  style?: string;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -107,7 +119,9 @@ export function Confetti({ active }: { active: boolean }) {
       for (const piece of pieces) {
         piece.x += piece.vx;
         piece.y += piece.vy;
-        piece.vy += 0.085; // gravity
+        // Petals fall slowly and drift; sparks rise before falling. Same
+        // simulation, different constants.
+        piece.vy += style === 'petals' ? 0.03 : style === 'sparks' ? 0.055 : 0.085;
         piece.vx += Math.sin((frame + piece.size) * 0.02) * 0.04; // drift
         piece.rotation += piece.spin;
 
@@ -120,8 +134,26 @@ export function Confetti({ active }: { active: boolean }) {
         ctx.translate(piece.x, piece.y);
         ctx.rotate(piece.rotation);
         ctx.fillStyle = piece.colour;
-        // Rectangles read as paper; circles read as bubbles.
-        ctx.fillRect(-piece.size / 2, -piece.size / 4, piece.size, piece.size / 2);
+
+        if (style === 'petals') {
+          // An ellipse reads as a petal where a rectangle reads as paper.
+          ctx.beginPath();
+          ctx.ellipse(0, 0, piece.size / 2, piece.size / 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (style === 'sparks') {
+          // Small bright points with a glow.
+          ctx.globalAlpha = 0.9;
+          ctx.beginPath();
+          ctx.arc(0, 0, piece.size / 3.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        } else if (style === 'fireworks') {
+          // Short streaks, drawn along the direction of travel.
+          ctx.fillRect(-piece.size / 1.6, -piece.size / 7, piece.size * 1.25, piece.size / 3.5);
+        } else {
+          // Rectangles read as paper; circles read as bubbles.
+          ctx.fillRect(-piece.size / 2, -piece.size / 4, piece.size, piece.size / 2);
+        }
         ctx.restore();
       }
 
@@ -136,7 +168,7 @@ export function Confetti({ active }: { active: boolean }) {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
     };
-  }, [active]);
+  }, [active, style]);
 
   if (!active) return null;
 

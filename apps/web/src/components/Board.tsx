@@ -165,11 +165,22 @@ export function Board({
   mySeat,
   legal,
   onMove,
+  pawn = 'disc',
 }: {
   state: MatchState;
   mySeat: SeatIndex | null;
   legal: readonly LegalMove[];
   onMove: (token: TokenIndex, die: number) => void;
+  /**
+   * The local player's chosen pawn shape.
+   *
+   * Applies to THIS player's tokens only; opponents always render as the
+   * standard counter. Seat colour is how anyone finds their pieces in a
+   * crowded match, and giving every player a different silhouette would
+   * mean reading the board by shape instead -- slower, and worst exactly
+   * when the board is busiest. See PAWNS in lib/progress.ts.
+   */
+  pawn?: string;
 }) {
   /**
    * What is drawn right now. Lags the authoritative state while tokens are
@@ -623,14 +634,82 @@ export function Board({
                 r={0.105}
                 fill="url(#tokenSpec)"
               />
-              <circle cx={0} cy={0} r={0.1} fill="#000" opacity={0.17} />
-              <circle cx={0} cy={-0.012} r={0.085} fill={colour} opacity={0.92} />
+              {/*
+                The centre mark. For the local player this becomes their
+                chosen pawn shape; everyone else keeps the plain pip, so the
+                board still reads by colour. Drawn ON TOP of the finished
+                counter rather than replacing it, which keeps the lighting
+                and the contact shadow identical for every piece.
+              */}
+              <PawnMark shape={isMine ? pawn : 'disc'} colour={colour} />
             </g>
           );
         })}
       </svg>
     </div>
   );
+}
+
+/**
+ * The centre mark that distinguishes a chosen pawn.
+ *
+ * Deliberately small and inside the counter's edge. A shape that changed
+ * the piece's silhouette would alter how much of a square it covers and how
+ * two adjacent pieces read -- the counter stays the counter, and the mark
+ * is what says "this one is mine".
+ */
+function PawnMark({ shape, colour }: { shape: string; colour: string }): JSX.Element {
+  // A recessed well under every mark, so it reads as stamped rather than
+  // printed on.
+  const well = <circle cx={0} cy={0} r={0.115} fill="#000" opacity={0.17} />;
+
+  switch (shape) {
+    case 'pawn':
+      return (
+        <>
+          {well}
+          <path
+            d="M -0.055 0.075 q 0 -0.055 0.028 -0.08 q 0.022 -0.02 0.005 -0.042 a 0.045 0.045 0 1 1 0.044 0 q -0.017 0.022 0.005 0.042 q 0.028 0.025 0.028 0.08 z"
+            fill={colour}
+            opacity={0.95}
+          />
+        </>
+      );
+    case 'gem':
+      return (
+        <>
+          {well}
+          <path d="M 0 -0.085 L 0.075 0 L 0 0.085 L -0.075 0 Z" fill={colour} opacity={0.95} />
+          <path d="M 0 -0.085 L 0.075 0 L 0 0 Z" fill="#fff" opacity={0.35} />
+        </>
+      );
+    case 'star':
+      return (
+        <>
+          {well}
+          <path d={starPath(0, 0, 0.095, 0.042)} fill={colour} opacity={0.95} />
+        </>
+      );
+    case 'crown':
+      return (
+        <>
+          {well}
+          <path
+            d="M -0.08 0.055 L -0.08 -0.03 L -0.04 0.012 L 0 -0.06 L 0.04 0.012 L 0.08 -0.03 L 0.08 0.055 Z"
+            fill={colour}
+            opacity={0.95}
+          />
+        </>
+      );
+    case 'disc':
+    default:
+      return (
+        <>
+          <circle cx={0} cy={0} r={0.1} fill="#000" opacity={0.17} />
+          <circle cx={0} cy={-0.012} r={0.085} fill={colour} opacity={0.92} />
+        </>
+      );
+  }
 }
 
 /** Five-pointed star, used to mark safe squares. */

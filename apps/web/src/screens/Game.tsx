@@ -164,7 +164,13 @@ export function Game({
         />
       </div>
 
-      <Board state={state} mySeat={mySeat} legal={legal} onMove={onMove} />
+      <Board
+        state={state}
+        mySeat={mySeat}
+        legal={legal}
+        onMove={onMove}
+        pawn={progress.pawn}
+      />
 
       {/* Pippo sits under the board, where he is visible without competing
           with the pieces for attention. */}
@@ -271,7 +277,7 @@ function MatchOver({
 
   return (
     <>
-      <Confetti active={iWon} />
+      <Confetti active={iWon} style={progress.celebration} />
 
       <div className={`victory${iWon ? ' won' : ''}`}>
         <div

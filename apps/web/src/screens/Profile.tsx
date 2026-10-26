@@ -39,11 +39,13 @@ export function Profile({
   onProgressChange,
   onBack,
   onReplayTour,
+  onOpenUnlocks,
 }: {
   progress: ProgressState;
   onProgressChange: (next: ProgressState) => void;
   onBack: () => void;
   onReplayTour: () => void;
+  onOpenUnlocks: () => void;
 }) {
   const [sheet, setSheet] = useState<'avatar' | 'theme' | null>(null);
   const [editingName, setEditingName] = useState(false);
@@ -190,6 +192,10 @@ export function Profile({
       </div>
 
       <BadgeGrid progress={progress} />
+
+      <button type="button" className="btn btn-primary" onClick={onOpenUnlocks}>
+        See all unlocks
+      </button>
 
       <button type="button" className="btn btn-ghost" onClick={onReplayTour}>
         Show the welcome tour again

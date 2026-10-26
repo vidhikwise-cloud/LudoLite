@@ -23,6 +23,7 @@ import { Legal } from './screens/Legal.js';
 import { Lobby } from './screens/Lobby.js';
 import { PlayComputer } from './screens/PlayComputer.js';
 import { Profile } from './screens/Profile.js';
+import { Unlocks } from './screens/Unlocks.js';
 
 type Screen =
   | 'home'
@@ -30,6 +31,7 @@ type Screen =
   | 'join'
   | 'computer'
   | 'profile'
+  | 'unlocks'
   | 'room'
   | 'privacy'
   | 'terms'
@@ -557,6 +559,15 @@ export function App() {
           onProgressChange={setProgress}
           onBack={() => setScreen('home')}
           onReplayTour={() => setTourOpen(true)}
+          onOpenUnlocks={() => setScreen('unlocks')}
+        />
+      ) : null}
+
+      {screen === 'unlocks' ? (
+        <Unlocks
+          progress={progress}
+          onProgressChange={setProgress}
+          onBack={() => setScreen('profile')}
         />
       ) : null}
 

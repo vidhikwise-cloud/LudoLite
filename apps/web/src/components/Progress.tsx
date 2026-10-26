@@ -17,6 +17,7 @@ import {
   AVATARS,
   MISSIONS,
   THEMES,
+  TITLES,
   claimMission,
   levelProgress,
   titleForLevel,
@@ -52,7 +53,7 @@ export function PlayerCard({
     <div className="playercard">
       <button
         type="button"
-        className="avatar"
+        className={`avatar frame-${progress.frame}`}
         onClick={onPickAvatar}
         aria-label="Change your avatar"
       >
@@ -60,7 +61,15 @@ export function PlayerCard({
       </button>
       <div className="playercard-body">
         <div className="playercard-top">
-          <span className="playercard-title">{titleForLevel(level)}</span>
+          {/*
+            A chosen title replaces the automatic level one. The level title
+            says how far you have come; a chosen title says something about
+            how you play, and only one of them should be on the card.
+          */}
+          <span className="playercard-title">
+            {TITLES.find((t) => t.id === progress.title && t.id !== 'none')?.name ??
+              titleForLevel(level)}
+          </span>
           <span className="playercard-level">Level {level}</span>
         </div>
         <div

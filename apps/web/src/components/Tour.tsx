@@ -62,6 +62,20 @@ const CARDS: readonly Card[] = [
     tint: 'var(--green)',
   },
   {
+    /*
+     * These are properties of the code, not intentions. There is no chat
+     * to moderate because none was built; reactions are a fixed set of six
+     * emoji with no free text; and matchmaking does not exist, so a room
+     * can only be reached by someone holding its code. Stating them is
+     * worth a card because a parent handing over a phone has no way to
+     * know any of it otherwise.
+     */
+    art: '👨‍👩‍👧',
+    title: 'Safe for family',
+    body: 'No chat and no strangers. Reactions are a fixed set of emoji, rooms open only to people you send the code to, and there is no matchmaking.',
+    tint: 'var(--blue)',
+  },
+  {
     art: '🎨',
     title: 'Earn as you play',
     body: 'Matches earn XP toward levels, badges and new boards. All of it is cosmetic, and none of it is for sale.',

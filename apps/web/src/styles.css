@@ -2683,6 +2683,128 @@ body {
   background: var(--accent);
 }
 
+/* ==========================================================================
+ * Avatar frames
+ *
+ * Decoration around the player card's avatar. Each is a ring drawn with
+ * box-shadow or a gradient border rather than an image, so they cost
+ * nothing and scale with the avatar.
+ * ========================================================================== */
+
+.avatar.frame-plain {
+  /* The default. Stated so switching back to it is a change. */
+  box-shadow: var(--sheen);
+}
+
+.avatar.frame-ring {
+  box-shadow: 0 0 0 3px var(--accent), var(--sheen);
+}
+
+.avatar.frame-laurel {
+  box-shadow: 0 0 0 3px var(--green), 0 0 0 5px color-mix(in srgb, var(--green) 28%, transparent),
+    var(--sheen);
+}
+
+.avatar.frame-flame {
+  box-shadow: 0 0 0 3px var(--streak), 0 0 14px -2px var(--streak), var(--sheen);
+  animation: frameEmber 2.6s ease-in-out infinite;
+}
+
+@keyframes frameEmber {
+  0%, 100% { box-shadow: 0 0 0 3px var(--streak), 0 0 12px -3px var(--streak), var(--sheen); }
+  50% { box-shadow: 0 0 0 3px var(--streak), 0 0 20px 0 var(--streak), var(--sheen); }
+}
+
+.avatar.frame-aurora {
+  box-shadow: var(--sheen);
+  border: 3px solid transparent;
+  background:
+    linear-gradient(var(--paper-2), var(--paper-2)) padding-box,
+    conic-gradient(var(--red), var(--yellow), var(--green), var(--blue), var(--red)) border-box;
+  animation: frameSpin 7s linear infinite;
+}
+
+@keyframes frameSpin {
+  to { filter: hue-rotate(360deg); }
+}
+
+/* ==========================================================================
+ * Unlocks
+ *
+ * Every row states its own requirement. A locked item with no stated
+ * condition reads as "buy this"; the same item marked with a level and an
+ * XP distance reads as a goal.
+ * ========================================================================== */
+
+.unlocks {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.unlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 2px solid var(--rule);
+  box-shadow: var(--lift-1);
+  cursor: pointer;
+  transition: transform 160ms var(--ease), border-color 160ms linear;
+}
+
+.unlock:hover:not(:disabled) {
+  transform: translateX(3px);
+}
+
+.unlock.on {
+  border-color: var(--accent);
+  background: var(--accent-sf);
+}
+
+/* Locked rows stay fully legible. Dimming the NAME would hide what the
+   player is working toward, which is the only reason the row is shown. */
+.unlock.locked {
+  cursor: not-allowed;
+  background: var(--paper-2);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.unlock-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.unlock-name {
+  display: block;
+  font: 700 14px/1.25 var(--display);
+  color: var(--ink);
+}
+
+.unlock-blurb {
+  display: block;
+  margin-top: 2px;
+  font: 400 12px/1.35 var(--body);
+  color: var(--ink-3);
+}
+
+.unlock-req {
+  flex: none;
+  font: 600 11px/1.3 var(--body);
+  color: var(--ink-3);
+  text-align: right;
+  max-width: 42%;
+}
+
+.unlock-req.met {
+  color: var(--accent);
+}
+
 /* ========================================================================== */
 /* Profile                                                                    */
 /* ========================================================================== */

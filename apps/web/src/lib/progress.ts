@@ -110,6 +110,11 @@ export interface ProgressState {
   readonly theme: string;
   /** Generated on first run; the player can change it in their profile. */
   readonly name: string;
+  /* Identity cosmetics. All earned by playing; none are for sale. */
+  readonly pawn: string;
+  readonly frame: string;
+  readonly celebration: string;
+  readonly title: string;
   /* Daily. */
   readonly day: string;
   readonly missions: readonly MissionProgress[];
@@ -183,6 +188,103 @@ export const AVATARS = [
 ] as const;
 
 export const DEFAULT_AVATAR = AVATARS[0];
+
+/* -------------------------------------------------------------------------- */
+/* Identity cosmetics                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Everything in this section is EARNED BY PLAYING and never purchasable.
+ *
+ * Selling cosmetics inside the Android build would engage Play Billing
+ * policy, which is a materially different compliance question from the one
+ * this project has scoped -- and a store would turn XP into a currency,
+ * which lib/progress.ts exists to avoid. See the header of this file and
+ * docs/COMPLIANCE.md.
+ */
+export interface Cosmetic {
+  readonly id: string;
+  readonly name: string;
+  readonly blurb: string;
+  readonly level: number;
+}
+
+/**
+ * Pawn shapes.
+ *
+ * IMPORTANT: a chosen pawn is drawn for YOUR OWN tokens on YOUR OWN screen
+ * only. Opponents always render as the standard counter.
+ *
+ * Seat colour is how a player finds their pieces mid-match. If every player
+ * also had a different silhouette, reading the board would mean scanning
+ * for a shape rather than a colour, which is slower and worse exactly when
+ * the board is crowded. Restricting shapes to the local player keeps the
+ * identity and costs no legibility.
+ */
+export const PAWNS: readonly Cosmetic[] = [
+  { id: 'disc', name: 'Classic Counter', blurb: 'The standard carrom disc', level: 1 },
+  { id: 'pawn', name: 'Tall Pawn', blurb: 'Traditional tapered piece', level: 2 },
+  { id: 'gem', name: 'Cut Gem', blurb: 'Faceted and sharp', level: 6 },
+  { id: 'star', name: 'Star', blurb: 'Five points, no apologies', level: 9 },
+  { id: 'crown', name: 'Crown', blurb: 'For the perpetually smug', level: 14 },
+];
+
+/** Avatar frames on the player card. */
+export const FRAMES: readonly Cosmetic[] = [
+  { id: 'plain', name: 'Plain', blurb: 'No frame', level: 1 },
+  { id: 'ring', name: 'Ring', blurb: 'A simple band', level: 4 },
+  { id: 'laurel', name: 'Laurel', blurb: 'Earned, not given', level: 7 },
+  { id: 'flame', name: 'Ember', blurb: 'Warm glow', level: 11 },
+  { id: 'aurora', name: 'Aurora', blurb: 'Shifting colour', level: 16 },
+];
+
+/** What happens on the victory screen when you win. */
+export const CELEBRATIONS: readonly Cosmetic[] = [
+  { id: 'confetti', name: 'Confetti', blurb: 'Paper, everywhere', level: 1 },
+  { id: 'fireworks', name: 'Fireworks', blurb: 'Bursts above the crest', level: 5 },
+  { id: 'petals', name: 'Petals', blurb: 'A gentler shower', level: 8 },
+  { id: 'sparks', name: 'Sparks', blurb: 'Gold embers rising', level: 13 },
+];
+
+/**
+ * Chosen titles, shown under the name.
+ *
+ * Distinct from the level title (titleForLevel), which is automatic. These
+ * are picked, so they say something about how you play rather than how long
+ * you have played.
+ */
+export const TITLES: readonly Cosmetic[] = [
+  { id: 'none', name: 'No title', blurb: 'Just your name', level: 1 },
+  { id: 'rookie', name: 'The Hopeful', blurb: 'Everyone starts here', level: 2 },
+  { id: 'cutter', name: 'The Cutter', blurb: 'Takes it personally', level: 5 },
+  { id: 'racer', name: 'The Racer', blurb: 'Straight for home', level: 8 },
+  { id: 'wall', name: 'The Wall', blurb: 'Nothing gets past', level: 12 },
+  { id: 'legend', name: 'The Legend', blurb: 'Earned the hard way', level: 18 },
+];
+
+/** Every cosmetic family, for the generic unlock check. */
+export const COSMETIC_SETS = { PAWNS, FRAMES, CELEBRATIONS, TITLES } as const;
+
+/** Is this cosmetic available at the player's level? */
+export function cosmeticUnlocked(set: readonly Cosmetic[], id: string, level: number): boolean {
+  const item = set.find((c) => c.id === id);
+  return item !== undefined && level >= item.level;
+}
+
+/**
+ * A stored cosmetic id, or the fallback if it is unknown or not yet earned.
+ *
+ * Used on load so a selection cannot survive the rules that granted it.
+ */
+function validCosmetic(
+  set: readonly Cosmetic[],
+  stored: unknown,
+  xp: number,
+  fallback: string,
+): string {
+  if (typeof stored !== 'string') return fallback;
+  return cosmeticUnlocked(set, stored, levelFromXp(xp)) ? stored : fallback;
+}
 
 /* -------------------------------------------------------------------------- */
 /* Names                                                                      */
@@ -324,6 +426,10 @@ function initial(): ProgressState {
     avatar: DEFAULT_AVATAR,
     theme: 'classic',
     name: randomName(),
+    pawn: 'disc',
+    frame: 'plain',
+    celebration: 'confetti',
+    title: 'none',
     day: today(),
     missions: freshMissions(),
     streakDays: 0,
@@ -400,6 +506,17 @@ export function loadProgress(): ProgressState {
       typeof s.name === 'string' && s.name.trim() !== ''
         ? s.name.trim().slice(0, MAX_NAME)
         : randomName(),
+    /*
+     * Cosmetics are re-validated against the level on every load, not just
+     * when chosen. A stored selection can outlive the rules -- an edited
+     * file, or a catalogue whose levels changed between builds -- and a
+     * cosmetic the player has not earned should quietly fall back to the
+     * default rather than persist.
+     */
+    pawn: validCosmetic(PAWNS, s.pawn, num(s.xp), 'disc'),
+    frame: validCosmetic(FRAMES, s.frame, num(s.xp), 'plain'),
+    celebration: validCosmetic(CELEBRATIONS, s.celebration, num(s.xp), 'confetti'),
+    title: validCosmetic(TITLES, s.title, num(s.xp), 'none'),
     day: typeof s.day === 'string' ? s.day : base.day,
     missions,
     streakDays: num(s.streakDays),
@@ -578,6 +695,42 @@ export function setTheme(prev: ProgressState, theme: string): ProgressState {
   const next = { ...prev, theme };
   saveProgress(next);
   return next;
+}
+
+/**
+ * Chooses a cosmetic, refusing anything the player has not reached.
+ *
+ * The level check lives here rather than only in the picker, so a stale
+ * stored value or a hand-edited one cannot grant a cosmetic that was never
+ * earned. Refusing returns the previous state unchanged rather than
+ * throwing: a locked selection is a no-op, not an error.
+ */
+function chooseCosmetic(
+  prev: ProgressState,
+  set: readonly Cosmetic[],
+  key: 'pawn' | 'frame' | 'celebration' | 'title',
+  id: string,
+): ProgressState {
+  if (!cosmeticUnlocked(set, id, levelFromXp(prev.xp))) return prev;
+  const next = { ...prev, [key]: id };
+  saveProgress(next);
+  return next;
+}
+
+export function setPawn(prev: ProgressState, id: string): ProgressState {
+  return chooseCosmetic(prev, PAWNS, 'pawn', id);
+}
+
+export function setFrame(prev: ProgressState, id: string): ProgressState {
+  return chooseCosmetic(prev, FRAMES, 'frame', id);
+}
+
+export function setCelebration(prev: ProgressState, id: string): ProgressState {
+  return chooseCosmetic(prev, CELEBRATIONS, 'celebration', id);
+}
+
+export function setChosenTitle(prev: ProgressState, id: string): ProgressState {
+  return chooseCosmetic(prev, TITLES, 'title', id);
 }
 
 export function winRate(s: ProgressState): number {

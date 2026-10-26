@@ -10,7 +10,14 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   ACHIEVEMENTS,
+  CELEBRATIONS,
+  FRAMES,
   MAX_NAME,
+  PAWNS,
+  TITLES,
+  cosmeticUnlocked,
+  setFrame,
+  setPawn,
   claimMission,
   levelFromXp,
   levelProgress,
@@ -207,5 +214,62 @@ describe('corrupt storage', () => {
 describe('win rate', () => {
   it('is zero before any match rather than NaN', () => {
     expect(winRate(loadProgress())).toBe(0);
+  });
+});
+
+describe('cosmetics are earned, never granted', () => {
+  it('refuses a cosmetic above the player level', () => {
+    const state = loadProgress();
+    // Level 1 with no XP; the crown needs level 14.
+    expect(setPawn(state, 'crown').pawn).toBe('disc');
+  });
+
+  it('allows one at or below the level', () => {
+    const state = { ...loadProgress(), xp: xpForLevel(6) };
+    expect(setPawn(state, 'gem').pawn).toBe('gem');
+  });
+
+  it('refuses an id that is not in the catalogue', () => {
+    const state = { ...loadProgress(), xp: xpForLevel(30) };
+    expect(setPawn(state, 'not-a-real-pawn').pawn).toBe('disc');
+    expect(setFrame(state, '../../etc/passwd').frame).toBe('plain');
+  });
+
+  it('drops a stored cosmetic the player has not earned', () => {
+    // The state a hand-edited file would produce: a high-level cosmetic
+    // with no XP behind it.
+    localStorage.setItem(
+      'ludolite.progress.v1',
+      JSON.stringify({ xp: 0, pawn: 'crown', frame: 'aurora', celebration: 'sparks' }),
+    );
+    const state = loadProgress();
+    expect(state.pawn).toBe('disc');
+    expect(state.frame).toBe('plain');
+    expect(state.celebration).toBe('confetti');
+  });
+
+  it('keeps a stored cosmetic that is genuinely earned', () => {
+    localStorage.setItem(
+      'ludolite.progress.v1',
+      JSON.stringify({ xp: xpForLevel(20), pawn: 'crown', frame: 'aurora' }),
+    );
+    const state = loadProgress();
+    expect(state.pawn).toBe('crown');
+    expect(state.frame).toBe('aurora');
+  });
+
+  it('every catalogue has a level-1 default so a new player has a choice', () => {
+    for (const set of [PAWNS, FRAMES, CELEBRATIONS, TITLES]) {
+      expect(set.some((c) => c.level === 1)).toBe(true);
+    }
+  });
+
+  it('cosmeticUnlocked agrees with the level requirement', () => {
+    for (const item of PAWNS) {
+      expect(cosmeticUnlocked(PAWNS, item.id, item.level)).toBe(true);
+      if (item.level > 1) {
+        expect(cosmeticUnlocked(PAWNS, item.id, item.level - 1)).toBe(false);
+      }
+    }
   });
 });
