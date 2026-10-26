@@ -1102,10 +1102,24 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+/*
+ * Waiting for someone else's turn.
+ *
+ * It must recede without ceasing to be a die. `opacity` plus
+ * `box-shadow: none` did both: the cube lost its side wall and its lit
+ * face and read as a flat grey square, which is worse than either a lit
+ * die or no die at all. Instead the shadow is shortened -- the die has
+ * settled onto the table -- and the face desaturates slightly.
+ */
 .dice.idle {
-  opacity: 0.55;
   cursor: default;
-  box-shadow: none;
+  filter: saturate(0.8) brightness(0.93);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 2px rgba(120, 90, 50, 0.14),
+    0 1px 0 var(--wood-2),
+    0 2px 5px -1px rgba(35, 28, 26, 0.25);
+  transform: translateY(2px);
 }
 .dice.rolling {
   animation: diceTumble 0.56s cubic-bezier(0.3, 0.8, 0.4, 1);
@@ -1147,9 +1161,17 @@ body {
 }
 
 /* --- seat strip ---------------------------------------------------------- */
+/*
+ * Two fixed columns, not auto-fit.
+ *
+ * `auto-fit` with a 94px minimum fits three chips on a phone, so a
+ * four-player match renders 3 + 1 with an orphan on its own row, and each
+ * chip is then too narrow to show a name -- every bot truncates to "B...".
+ * Two columns give a 2x2 block and roughly double the width for the name.
+ */
 .seatstrip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(94px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 7px;
 }
 .seatchip {

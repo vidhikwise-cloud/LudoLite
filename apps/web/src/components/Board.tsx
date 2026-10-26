@@ -351,12 +351,19 @@ export function Board({
             <stop offset="100%" stopColor="#fff" stopOpacity="0" />
           </radialGradient>
 
-          {/* Board slab: a warm wash with a lit top-left corner, so the
-              playfield is not a uniform rectangle of colour. */}
+          {/*
+           * Board slab: a lit top-left corner falling away to a shaded
+           * bottom-right.
+           *
+           * Kept weak on purpose. This paints OVER the squares, so a strong
+           * white stop washes the whole playfield out -- very visible in
+           * dark mode, where a 10% white veil turns near-black squares grey
+           * and the board loses its contrast.
+           */}
           <linearGradient id="slab" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#fff" stopOpacity="0.1" />
-            <stop offset="55%" stopColor="#fff" stopOpacity="0.02" />
-            <stop offset="100%" stopColor="#000" stopOpacity="0.07" />
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.045" />
+            <stop offset="45%" stopColor="#fff" stopOpacity="0" />
+            <stop offset="100%" stopColor="#000" stopOpacity="0.05" />
           </linearGradient>
 
           {/* Yard wells read as recessed: dark at the top edge where the
