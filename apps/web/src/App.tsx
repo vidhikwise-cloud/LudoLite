@@ -1,11 +1,18 @@
 import type { MatchState, SeatIndex, TokenIndex } from '@ludolite/engine';
-import type { PublicConfig, RoomView } from '@ludolite/shared';
+import type { BotDifficulty, PublicConfig, RoomView } from '@ludolite/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { BrandBar } from './components/Brand.js';
 import { ConnectionStatus, type ConnectionState } from './components/ConnectionStatus.js';
 import { MuteToggle } from './components/MuteToggle.js';
+import { RewardToasts, type RewardToast } from './components/Progress.js';
 import * as api from './lib/api.js';
+import {
+  loadProgress,
+  recordMatch,
+  type MatchOutcome,
+  type ProgressState,
+} from './lib/progress.js';
 import { connectToRoom, type GameSocket } from './lib/socket.js';
 import { CreateRoom } from './screens/CreateRoom.js';
 import { Game } from './screens/Game.js';
@@ -45,6 +52,28 @@ export function App() {
   const [connection, setConnection] = useState<ConnectionState>('connected');
   /** Set when a bot game was just created, so it starts without a lobby. */
   const [autoStart, setAutoStart] = useState(false);
+
+  const [progress, setProgress] = useState<ProgressState>(() => loadProgress());
+  const [toasts, setToasts] = useState<readonly RewardToast[]>([]);
+
+  /**
+   * Guards against double-counting a finished match.
+   *
+   * The winner arrives in socket state, and that state can be re-delivered on
+   * reconnect or re-rendered on any update. Recording per match id rather
+   * than per render is what stops a flaky connection from inflating someone's
+   * stats.
+   */
+  const recordedRef = useRef<string | null>(null);
+
+  /**
+   * The bot difficulty the player last chose.
+   *
+   * RoomView does not carry it, so without this a rematch against the
+   * computer would silently drop someone from hard back to easy -- which
+   * reads as the game going soft on them after a loss.
+   */
+  const lastBotLevel = useRef<BotDifficulty>('normal');
 
   const socketRef = useRef<GameSocket | null>(null);
 
@@ -164,6 +193,90 @@ export function App() {
       : room && room.hostPlayerId,
   );
 
+  /**
+   * Records a finished match into local progression.
+   *
+   * Derived from the final state rather than accumulated during play: a
+   * reconnect replays events, and a counter incremented per event would
+   * double-count. `recordedRef` keyed on match id makes this idempotent even
+   * if the effect runs again for the same completed match.
+   *
+   * Captures are the one figure the final state cannot give us -- the engine
+   * reports where tokens are now, not how they got there -- so "tokens sent
+   * home" is counted as tokens of other seats still in the yard at the end.
+   * That is an approximation, and it is deliberately the conservative kind:
+   * it can undercount a token that was cut and then re-entered, never
+   * overcount. A player's stats being slightly modest is a far better
+   * failure than stats that inflate.
+   */
+  useEffect(() => {
+    if (!state || state.phase !== 'complete' || mySeat === null || !room) return;
+    if (recordedRef.current === state.matchId) return;
+    recordedRef.current = state.matchId;
+
+    const mine = state.seats.find((s) => s.index === mySeat);
+    if (!mine) return;
+
+    const inYard = (seatIndex: number) =>
+      state.seats
+        .find((s) => s.index === seatIndex)
+        ?.tokens.filter((t) => t.position.kind === 'yard').length ?? 0;
+
+    const captures = state.seats
+      .filter((s) => s.index !== mySeat && s.playerId !== null)
+      .reduce((sum, s) => sum + inYard(s.index), 0);
+
+    const outcome: MatchOutcome = {
+      won: state.winnerSeat === mySeat,
+      captures,
+      lost: inYard(mySeat),
+      // 'finish' is the centre. 'home' is the run-in column before it, so
+      // counting 'home' here would credit tokens that never arrived.
+      finished: mine.tokens.filter((t) => t.position.kind === 'finish').length,
+      // Sixes are not carried in the final state; counting them would need a
+      // running tally that survives reconnects, which is not worth the
+      // complexity for one achievement.
+      sixes: 0,
+      opponents: room.players.filter((p) => p.seat !== mySeat).length,
+      vsComputer: room.players.every((p) => p.seat === mySeat || p.isBot),
+    };
+
+    const delta = recordMatch(progress, outcome);
+    setProgress(delta.state);
+
+    const next: RewardToast[] = [];
+    if (delta.xpGained > 0) {
+      next.push({
+        id: `xp-${state.matchId}`,
+        icon: '✨',
+        title: `+${delta.xpGained} XP`,
+        sub: outcome.won ? 'Match won' : 'Match played',
+      });
+    }
+    if (delta.leveledTo !== null) {
+      next.push({
+        id: `lvl-${state.matchId}`,
+        icon: '⬆️',
+        title: `Level ${delta.leveledTo}`,
+        sub: 'New level reached',
+      });
+    }
+    for (const a of delta.unlocked) {
+      next.push({ id: `ach-${a.id}`, icon: a.icon, title: a.name, sub: a.blurb });
+    }
+    for (const t of delta.themesUnlocked) {
+      next.push({ id: `thm-${t.id}`, icon: '🎨', title: `${t.name} unlocked`, sub: t.blurb });
+    }
+
+    setToasts(next);
+    const timer = window.setTimeout(() => setToasts([]), 5200);
+    return () => window.clearTimeout(timer);
+    // `progress` is read, not depended on: including it would re-run this on
+    // every progression change and the ref guard would then be doing all the
+    // work. The match id is the real trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.phase, state?.matchId, mySeat, room]);
+
   async function handleCreate(input: Parameters<typeof api.createRoom>[0]) {
     setBusy(true);
     setError(null);
@@ -202,6 +315,7 @@ export function App() {
     setBusy(true);
     setError(null);
     try {
+      if (input.bots) lastBotLevel.current = input.bots.level;
       const result = await api.createRoom(input);
       setRoom(result.room);
       setScreen('room');
@@ -247,6 +361,67 @@ export function App() {
     setScreen('home');
   }
 
+  /**
+   * Rematch.
+   *
+   * Against the computer this is a true one-tap rematch: a new free room with
+   * the same seat count and the same bot difficulty, started immediately.
+   *
+   * Against people it is NOT. `startMatch` returns the existing match when
+   * `room.match` is set, so `room:start` on a finished room replays the
+   * result rather than dealing a new board -- restarting a room needs a
+   * server-side change (a new match row against the same memberships) that
+   * is deliberately not being improvised here, because it touches paid-room
+   * accounting: a second match in a room the host paid ₹1 for is a pricing
+   * decision, not a UI one.
+   *
+   * So for a multiplayer room this returns the host to Create Room with the
+   * same settings, which is one tap more than a true rematch and is honest
+   * about what actually happens. It never silently appears to restart.
+   */
+  function handleRematch() {
+    const botMatch =
+      room !== null && room.players.every((p) => p.seat === mySeat || p.isBot);
+
+    if (botMatch && room) {
+      const me = room.players.find((p) => p.seat === mySeat);
+      const seatCount = room.seatCount;
+      const displayName = me?.displayName ?? 'You';
+      const botCount = room.players.filter((p) => p.isBot).length;
+      // Difficulty is not carried on RoomView, so the rematch uses the
+      // default rather than inventing a level the player did not pick.
+      leave();
+      void handlePlayComputer({
+        displayName,
+        seatCount,
+        funding: 'free',
+        bots: { count: botCount, level: lastBotLevel.current },
+      });
+      return;
+    }
+
+    leave();
+    setScreen('create');
+  }
+
+  /**
+   * Quick reactions.
+   *
+   * Local only: there is no server event to broadcast them, and adding one
+   * means deciding how a reaction aimed at another player is moderated and
+   * rate limited. The fixed non-textual emoji set is what keeps the local
+   * version safe to ship now; see the note in components/Progress.tsx.
+   */
+  function handleReact(emoji: string) {
+    const el = document.createElement('div');
+    el.className = 'reactfloat';
+    el.textContent = emoji;
+    el.style.left = `${45 + Math.random() * 10}%`;
+    el.style.bottom = '22%';
+    document.body.appendChild(el);
+    window.setTimeout(() => el.remove(), 1600);
+  }
+
   async function cancelAndRefund() {
     if (!room) return;
     setBusy(true);
@@ -287,6 +462,8 @@ export function App() {
       {screen === 'home' ? (
         <Home
           config={config}
+          progress={progress}
+          onProgressChange={setProgress}
           onCreate={() => {
             setError(null);
             setScreen('create');
@@ -335,6 +512,10 @@ export function App() {
 
       {screen === 'room' ? <ConnectionStatus state={connection} /> : null}
 
+      {/* Fixed-position overlay, so it is mounted once rather than per
+          screen and never shifts layout underneath the board. */}
+      <RewardToasts toasts={toasts} />
+
       {screen === 'room' && room ? (
         state && state.phase !== 'awaiting-players' ? (
           <Game
@@ -347,6 +528,8 @@ export function App() {
               socketRef.current?.emit('match:move', { token, die })
             }
             onLeave={leave}
+            onRematch={handleRematch}
+            onReact={handleReact}
           />
         ) : (
           <Lobby

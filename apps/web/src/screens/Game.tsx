@@ -11,6 +11,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Board } from '../components/Board.js';
 import { Confetti } from '../components/Confetti.js';
 import { Dice, ROLL_MS } from '../components/Dice.js';
+import { ReactionBar } from '../components/Progress.js';
 import { sfx } from '../lib/feedback.js';
 
 /**
@@ -28,6 +29,8 @@ export function Game({
   onRoll,
   onMove,
   onLeave,
+  onRematch,
+  onReact,
 }: {
   room: RoomView;
   state: MatchState;
@@ -36,6 +39,8 @@ export function Game({
   onRoll: () => void;
   onMove: (token: TokenIndex, die: number) => void;
   onLeave: () => void;
+  onRematch: () => void;
+  onReact: (emoji: string) => void;
 }) {
   const [rolling, setRolling] = useState(false);
   const wasMyTurn = useRef(false);
@@ -70,7 +75,16 @@ export function Game({
 
   // --- match over -----------------------------------------------------------
   if (state.phase === 'complete') {
-    return <MatchOver room={room} state={state} mySeat={mySeat} onLeave={onLeave} />;
+    return (
+      <MatchOver
+        room={room}
+        state={state}
+        mySeat={mySeat}
+        onLeave={onLeave}
+        onRematch={onRematch}
+        onReact={onReact}
+      />
+    );
   }
 
   const turnPlayer = room.players.find((p) => p.seat === state.turnSeat);
@@ -176,11 +190,15 @@ function MatchOver({
   state,
   mySeat,
   onLeave,
+  onRematch,
+  onReact,
 }: {
   room: RoomView;
   state: MatchState;
   mySeat: SeatIndex | null;
   onLeave: () => void;
+  onRematch: () => void;
+  onReact: (emoji: string) => void;
 }) {
   const iWon = mySeat !== null && state.winnerSeat === mySeat;
   const winner = room.players.find((p) => p.seat === state.winnerSeat);
@@ -252,9 +270,30 @@ function MatchOver({
         })}
       </ol>
 
-      <button type="button" className="btn btn-primary" onClick={onLeave}>
-        Back to home
-      </button>
+      {/*
+        Rematch is the primary action, not "back to home".
+
+        The moment right after a result is when the appetite for another game
+        is highest -- especially after a loss, and most of all after a close
+        one. Making the player navigate home and rebuild a room to get there
+        spends that appetite on menus.
+
+        For a bot match this restarts immediately. For a room it reuses the
+        same room and the same people, so "revenge" is against the player who
+        actually beat you rather than a fresh lobby of strangers.
+      */}
+      <div className="rematch-row">
+        <button type="button" className="btn btn-primary" onClick={onRematch}>
+          {iWon ? 'Play again' : 'Rematch'}
+        </button>
+        <button type="button" className="btn btn-ghost" onClick={onLeave}>
+          Home
+        </button>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <ReactionBar onReact={onReact} />
+      </div>
     </>
   );
 }

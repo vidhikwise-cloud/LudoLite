@@ -39,6 +39,42 @@
 
   --shadow: 0 1px 2px rgba(35, 28, 26, 0.05), 0 8px 24px -12px rgba(35, 28, 26, 0.18);
   --radius: 12px;
+
+  /*
+   * Premium surface tokens.
+   *
+   * The warm paper identity is kept deliberately -- see the note at the top
+   * of this file about not reading as a betting app. What is added is depth:
+   * layered shadows, a wood-toned accent for board furniture, and a tuned
+   * easing curve. No neon, no gold gradients, no casino dark.
+   */
+  --wood: #b07d4f;
+  --wood-2: #8a5f3a;
+  --wood-ink: #4a3526;
+  --felt: #f7f1e8;
+
+  /* A three-layer shadow reads as a physical object lifted off the page,
+     where a single blur reads as a drop shadow on a flat rectangle. */
+  --lift-1: 0 1px 2px rgba(35, 28, 26, 0.06), 0 2px 6px -2px rgba(35, 28, 26, 0.1);
+  --lift-2: 0 1px 2px rgba(35, 28, 26, 0.06), 0 6px 16px -6px rgba(35, 28, 26, 0.16),
+    0 16px 32px -16px rgba(35, 28, 26, 0.18);
+  --lift-3: 0 2px 4px rgba(35, 28, 26, 0.08), 0 12px 28px -8px rgba(35, 28, 26, 0.2),
+    0 28px 56px -24px rgba(35, 28, 26, 0.26);
+
+  /* Inset highlight along the top edge: the cue that a surface is raised. */
+  --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+
+  --radius-sm: 10px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+
+  /* Slight overshoot. Motion that settles feels physical; linear feels cheap. */
+  --ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --xp: #7c5cd6;
+  --xp-sf: #f0ebfb;
+  --streak: #e8701c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -70,6 +106,25 @@
     --danger-ink: #f08b8f;
 
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px -12px rgba(0, 0, 0, 0.6);
+
+    --wood: #a4784f;
+    --wood-2: #7d5838;
+    --wood-ink: #e8d9c8;
+    --felt: #241d1b;
+
+    --lift-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 2px 6px -2px rgba(0, 0, 0, 0.5);
+    --lift-2: 0 1px 2px rgba(0, 0, 0, 0.5), 0 6px 16px -6px rgba(0, 0, 0, 0.6),
+      0 16px 32px -16px rgba(0, 0, 0, 0.7);
+    --lift-3: 0 2px 4px rgba(0, 0, 0, 0.6), 0 12px 28px -8px rgba(0, 0, 0, 0.7),
+      0 28px 56px -24px rgba(0, 0, 0, 0.8);
+
+    /* Barely-there in dark: a bright top edge on a dark surface reads as a
+       seam rather than a highlight if it is any stronger than this. */
+    --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+    --xp: #a68ae8;
+    --xp-sf: #2a2338;
+    --streak: #f09050;
   }
 }
 
@@ -1278,6 +1333,794 @@ body {
   padding-top: 16px;
 }
 
+/* ========================================================================== */
+/* Premium surfaces                                                           */
+/* ========================================================================== */
+
+/*
+ * The hero is the first thing anyone sees, on web and in the APK alike.
+ * Depth comes from layered shadow and a warm radial wash rather than from
+ * gradients-as-decoration, so it still reads as paper.
+ */
+.hero {
+  position: relative;
+  text-align: center;
+  padding: 28px 20px 24px;
+  border-radius: var(--radius-xl);
+  background:
+    radial-gradient(120% 100% at 50% 0%, var(--card) 0%, var(--paper-2) 100%);
+  box-shadow: var(--lift-2), var(--sheen);
+  border: 1px solid var(--rule);
+  overflow: hidden;
+}
+
+/* Four faint token dots behind the hero: brand without a logo slab. */
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 180px;
+  background:
+    radial-gradient(circle at 20% 50%, color-mix(in srgb, var(--red) 18%, transparent) 0 18px, transparent 19px),
+    radial-gradient(circle at 40% 30%, color-mix(in srgb, var(--green) 16%, transparent) 0 14px, transparent 15px),
+    radial-gradient(circle at 62% 55%, color-mix(in srgb, var(--blue) 16%, transparent) 0 16px, transparent 17px),
+    radial-gradient(circle at 82% 32%, color-mix(in srgb, var(--yellow) 18%, transparent) 0 13px, transparent 14px);
+  filter: blur(1px);
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
+}
+
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 12px/1 var(--body);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  margin-bottom: 14px;
+}
+
+.hero h1 {
+  font: 800 clamp(26px, 7vw, 38px) / 1.12 var(--display);
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  color: var(--ink);
+}
+
+.hero .sub {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* --- buttons -------------------------------------------------------------- */
+
+/*
+ * Buttons get a pressed state with real travel. A button that visibly moves
+ * under the finger is the cheapest possible win for feel on touch.
+ */
+.btn {
+  transition:
+    transform 140ms var(--ease),
+    box-shadow 140ms var(--ease-out),
+    background-color 140ms linear,
+    border-color 140ms linear;
+}
+
+.btn-primary {
+  box-shadow: var(--lift-2), var(--sheen);
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--lift-3), var(--sheen);
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+  box-shadow: var(--lift-1);
+}
+
+.btn-ghost {
+  box-shadow: var(--lift-1);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: var(--lift-2);
+}
+
+/* A primary action with an icon and a supporting line. */
+.btn-rich {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  padding: 16px 18px;
+  width: 100%;
+}
+
+.btn-rich-icon {
+  flex: none;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  font-size: 21px;
+  background: var(--paper-2);
+  box-shadow: var(--sheen);
+}
+
+.btn-primary .btn-rich-icon {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.btn-rich-text {
+  display: block;
+  min-width: 0;
+}
+
+.btn-rich-title {
+  display: block;
+  font: 700 16px/1.25 var(--display);
+}
+
+.btn-rich-sub {
+  display: block;
+  font: 400 12.5px/1.35 var(--body);
+  opacity: 0.78;
+  margin-top: 2px;
+}
+
+/* ========================================================================== */
+/* Player card: avatar, level, XP bar                                         */
+/* ========================================================================== */
+
+.playercard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-2), var(--sheen);
+}
+
+.avatar {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  font-size: 27px;
+  line-height: 1;
+  border-radius: 16px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  box-shadow: var(--sheen);
+  cursor: pointer;
+  transition: transform 160ms var(--ease);
+  padding: 0;
+}
+
+.avatar:hover {
+  transform: scale(1.06) rotate(-3deg);
+}
+
+.avatar:active {
+  transform: scale(0.96);
+}
+
+.playercard-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.playercard-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 7px;
+}
+
+.playercard-title {
+  font: 700 15px/1.2 var(--display);
+  color: var(--ink);
+}
+
+.playercard-level {
+  font: 700 11.5px/1 var(--body);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--xp);
+  background: var(--xp-sf);
+  padding: 5px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+/* The XP bar is the single most-looked-at element after a match. */
+.xpbar {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  overflow: hidden;
+  box-shadow: inset 0 1px 2px rgba(35, 28, 26, 0.12);
+}
+
+.xpbar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--xp), color-mix(in srgb, var(--xp) 60%, var(--blue)));
+  transition: width 900ms var(--ease-out);
+}
+
+.xpbar-label {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font: 500 11.5px/1 var(--body);
+  color: var(--ink-3);
+}
+
+/* ========================================================================== */
+/* Daily missions and streak                                                  */
+/* ========================================================================== */
+
+.panel {
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-2), var(--sheen);
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 15px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-2);
+}
+
+.panel-title {
+  font: 700 11.5px/1 var(--body);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* Streak is framed as something earned, never as something at risk. */
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 700 12px/1 var(--body);
+  color: var(--streak);
+  /* Fallback first: an old WebView that cannot parse color-mix drops the
+     second declaration and keeps this, rather than rendering the label on
+     nothing. minSdk is 22, so the WebView here can be genuinely old. */
+  background: var(--warn-bg);
+  background: color-mix(in srgb, var(--streak) 12%, transparent);
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+
+.mission {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.mission:last-child {
+  border-bottom: 0;
+}
+
+.mission-check {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--ink-3);
+  transition: all 220ms var(--ease);
+}
+
+.mission.done .mission-check {
+  background: var(--ok-bg);
+  border-color: transparent;
+  color: var(--ok-ink);
+  transform: scale(1.06);
+}
+
+.mission-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.mission-label {
+  font: 600 14px/1.3 var(--body);
+  color: var(--ink);
+}
+
+.mission.done .mission-label {
+  color: var(--ink-2);
+}
+
+.mission-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  margin-top: 7px;
+  overflow: hidden;
+}
+
+.mission-track span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--green);
+  transition: width 500ms var(--ease-out);
+}
+
+.mission-xp {
+  flex: none;
+  font: 700 12.5px/1 var(--body);
+  color: var(--xp);
+  background: var(--xp-sf);
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 0;
+  cursor: default;
+}
+
+button.mission-xp {
+  cursor: pointer;
+  transition: transform 160ms var(--ease);
+}
+
+button.mission-xp:hover {
+  transform: scale(1.06);
+}
+
+.mission-xp.claimed {
+  color: var(--ink-3);
+  background: var(--off-bg);
+}
+
+/* Weekly track: seven pips, filled by days completed. */
+.weektrack {
+  display: flex;
+  gap: 6px;
+  padding: 13px 15px;
+  border-top: 1px solid var(--rule);
+  background: var(--paper-2);
+  align-items: center;
+}
+
+.weekpip {
+  flex: 1;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--rule);
+  transition: background-color 400ms var(--ease-out);
+}
+
+.weekpip.on {
+  background: linear-gradient(90deg, var(--streak), var(--yellow));
+}
+
+/* ========================================================================== */
+/* Stats grid                                                                 */
+/* ========================================================================== */
+
+.statgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 9px;
+}
+
+.stat {
+  padding: 13px 10px;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  text-align: center;
+}
+
+.stat-value {
+  font: 800 21px/1 var(--display);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  margin-top: 5px;
+  font: 500 11px/1.2 var(--body);
+  color: var(--ink-3);
+}
+
+/* ========================================================================== */
+/* Achievements                                                               */
+/* ========================================================================== */
+
+.badgegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 9px;
+}
+
+.badge {
+  padding: 13px 8px;
+  border-radius: var(--radius);
+  text-align: center;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  transition: transform 200ms var(--ease);
+}
+
+.badge.locked {
+  opacity: 0.45;
+  filter: grayscale(1);
+}
+
+.badge.unlocked:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--lift-2);
+}
+
+.badge-icon {
+  font-size: 25px;
+  line-height: 1;
+}
+
+.badge-name {
+  margin-top: 7px;
+  font: 700 12px/1.2 var(--display);
+  color: var(--ink);
+}
+
+.badge-blurb {
+  margin-top: 3px;
+  font: 400 10.5px/1.3 var(--body);
+  color: var(--ink-3);
+}
+
+/* ========================================================================== */
+/* Reward toasts                                                              */
+/* ========================================================================== */
+
+.rewards {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(380px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.reward {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-3);
+  animation: rewardIn 420ms var(--ease) both;
+}
+
+@keyframes rewardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.reward-icon {
+  font-size: 21px;
+  line-height: 1;
+}
+
+.reward-title {
+  font: 700 13.5px/1.25 var(--display);
+  color: var(--ink);
+}
+
+.reward-sub {
+  font: 400 11.5px/1.3 var(--body);
+  color: var(--ink-2);
+}
+
+/* ========================================================================== */
+/* Sheet (avatar / theme pickers)                                             */
+/* ========================================================================== */
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(35, 28, 26, 0.42);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 200ms ease both;
+  padding: 16px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet {
+  width: min(460px, 100%);
+  border-radius: var(--radius-xl);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-3);
+  padding: 18px;
+  animation: sheetIn 320ms var(--ease) both;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+@keyframes sheetIn {
+  from {
+    transform: translateY(28px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.sheet h3 {
+  margin: 0 0 14px;
+  font: 800 18px/1.2 var(--display);
+  color: var(--ink);
+}
+
+.avatarpick {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 9px;
+}
+
+.avatarpick button {
+  aspect-ratio: 1;
+  font-size: 25px;
+  border-radius: 14px;
+  background: var(--paper-2);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 160ms var(--ease), border-color 160ms linear;
+}
+
+.avatarpick button:hover {
+  transform: scale(1.08);
+}
+
+.avatarpick button.on {
+  border-color: var(--accent);
+  background: var(--accent-sf);
+}
+
+.themelist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.themerow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 13px;
+  border-radius: var(--radius);
+  background: var(--paper-2);
+  border: 2px solid transparent;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: border-color 160ms linear, transform 160ms var(--ease);
+}
+
+.themerow:hover:not(:disabled) {
+  transform: translateX(2px);
+}
+
+.themerow.on {
+  border-color: var(--accent);
+  background: var(--accent-sf);
+}
+
+.themerow:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.themeswatch {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  box-shadow: var(--sheen), var(--lift-1);
+}
+
+.themeswatch.classic {
+  background: linear-gradient(135deg, #fbf7f2, #e4d9cd);
+}
+.themeswatch.teak {
+  background: linear-gradient(135deg, #b07d4f, #6b4324);
+}
+.themeswatch.marble {
+  background: linear-gradient(135deg, #f4f1ec, #cfc5b4);
+}
+.themeswatch.midnight {
+  background: linear-gradient(135deg, #2b3566, #141a33);
+}
+.themeswatch.festival {
+  background: linear-gradient(135deg, #e8a61c, #d64045 55%, #2c6fbb);
+}
+
+.themename {
+  font: 700 14px/1.2 var(--display);
+  color: var(--ink);
+}
+
+.themeblurb {
+  font: 400 11.5px/1.3 var(--body);
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+.themelock {
+  margin-left: auto;
+  font: 600 11px/1 var(--body);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* ========================================================================== */
+/* Quick reactions                                                            */
+/* ========================================================================== */
+
+.reactbar {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.reactbar button {
+  font-size: 19px;
+  line-height: 1;
+  padding: 9px 11px;
+  border-radius: 13px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  box-shadow: var(--lift-1);
+  cursor: pointer;
+  transition: transform 160ms var(--ease);
+}
+
+.reactbar button:hover {
+  transform: translateY(-3px) scale(1.08);
+}
+
+.reactbar button:active {
+  transform: scale(0.92);
+}
+
+/* A reaction floats up from the bar and fades. */
+.reactfloat {
+  position: fixed;
+  z-index: 65;
+  font-size: 34px;
+  pointer-events: none;
+  animation: floatUp 1500ms var(--ease-out) both;
+}
+
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.6);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(-16px) scale(1.15);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-120px) scale(1);
+  }
+}
+
+/* ========================================================================== */
+/* Section headings and misc layout                                           */
+/* ========================================================================== */
+
+.section {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 4px 0 2px;
+}
+
+.section-title {
+  font: 700 11.5px/1 var(--body);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.section-rule {
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+}
+
+.linkbtn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: 600 12.5px/1 var(--body);
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Rematch is the strongest single pull back into another game, so it is a
+   primary action on the victory screen rather than a link. */
+.rematch-row {
+  display: flex;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.rematch-row .btn {
+  flex: 1;
+}
 /*
  * Reduced motion.
  *
