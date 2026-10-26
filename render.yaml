@@ -36,6 +36,9 @@ databases:
     #
     # Change to `basic-256mb` (~$6/mo) for anything beyond testing.
     plan: free
+    # Stated explicitly so it is visible that this matches the web service's
+    # region. The two must agree -- see the note on the service's `region`.
+    region: oregon
     postgresMajorVersion: "16"
 
 services:
@@ -56,11 +59,35 @@ services:
     #
     # Change to `starter` (~$7/mo) before real players use this.
     plan: free
-    region: singapore        # closest Render region to India
+    # MUST match the database's region. `DATABASE_URL` below resolves to a
+    # private-network connection string, and private networking does not
+    # cross regions: a Singapore service with an Oregon database fails with
+    # `P1001: Can't reach database server`.
+    #
+    # Singapore is the closest region to India and is what this should use,
+    # but the free database is created in Oregon regardless of the region
+    # requested, so the service follows it there. Latency from India is
+    # worse as a result. Moving both to Singapore means paying for Postgres.
+    region: oregon
     branch: main
 
+    # `--include=dev` is REQUIRED, not belt-and-braces.
+    #
+    # NODE_ENV is set to production below, and `npm ci` honours that by
+    # installing dependencies only -- 125 of 746 packages. Everything that
+    # builds this repo (typescript, vite, tsx) is a devDependency, so
+    # without the flag the build fails three separate ways at once:
+    # "This is not the tsc command you are looking for", "Cannot find type
+    # definition file for 'vite/client'", and "sh: 1: tsx: not found".
+    #
+    # `npx tsc` is especially misleading here: with typescript absent, npx
+    # silently downloads an unrelated `tsc` package from the registry and
+    # runs that instead of failing, which is where that message comes from.
+    #
+    # The dev packages are build-time only; the running service still uses
+    # just the production dependency tree.
     buildCommand: |
-      npm ci
+      npm ci --include=dev
       npx prisma generate --schema apps/server/prisma/schema.prisma
       npx tsc -p packages/engine/tsconfig.json
       npx tsc -p packages/shared/tsconfig.json
