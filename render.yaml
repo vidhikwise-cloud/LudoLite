@@ -24,8 +24,18 @@ databases:
   - name: ludo-db
     databaseName: ludo
     user: ludo
-    # The free tier expires after 30 days and then deletes the database.
-    plan: basic-256mb
+    # FREE TIER. Read this before relying on it:
+    #
+    #   * The database EXPIRES 30 days after creation, then has a 14-day
+    #     grace period before deletion. Upgrade to a paid plan before then
+    #     or the data is gone permanently.
+    #   * One free database per Render workspace. If another project in this
+    #     workspace already has one, this blueprint will fail to apply and
+    #     the plan must go back to `basic-256mb`.
+    #   * No backups, no connection pooling, 1 GB storage.
+    #
+    # Change to `basic-256mb` (~$6/mo) for anything beyond testing.
+    plan: free
     postgresMajorVersion: "16"
 
 services:
@@ -35,9 +45,17 @@ services:
     # auto-detected as a Docker service, which skips preDeployCommand and so
     # never runs the migrations.
     runtime: node
-    # Websockets need an always-on instance. The free tier sleeps, and a
-    # sleeping server drops every live match.
-    plan: starter
+    # FREE TIER -- deliberately chosen for first-deploy testing, but this is
+    # a real downgrade for this app, not just a cheaper tier:
+    #
+    #   * Render spins the service down after 15 minutes without traffic,
+    #     and a cold start takes ~1 minute. A sleeping server DROPS EVERY
+    #     LIVE MATCH, because websocket connections do not survive it.
+    #   * 750 instance-hours per workspace per month, shared with any other
+    #     service in the workspace.
+    #
+    # Change to `starter` (~$7/mo) before real players use this.
+    plan: free
     region: singapore        # closest Render region to India
     branch: main
 
@@ -48,13 +66,24 @@ services:
       npx tsc -p packages/shared/tsconfig.json
       npx tsc -p apps/server/tsconfig.json
       npm run build --workspace apps/web
-
-    # Migrations run before the new version takes traffic, so a deploy either
-    # has the right schema or fails outright rather than serving against an
-    # old one. Seeding is idempotent and never grants an approval.
-    preDeployCommand: |
       npm run db:deploy --workspace apps/server
       npm run db:seed --workspace apps/server
+
+    # NOTE -- migrations run in buildCommand above, NOT in preDeployCommand.
+    #
+    # `preDeployCommand` is a PAID-ONLY feature ("available for paid web
+    # services, private services, and background workers"). On the free plan
+    # Render silently ignores it, the migrations never run, and the server
+    # starts against an empty database -- which looks like a mysterious
+    # runtime crash rather than a configuration problem.
+    #
+    # Running them in the build step is the free-tier workaround, with one
+    # real tradeoff: the migration applies while the OLD version is still
+    # serving traffic, instead of after build and before cutover. For a
+    # single-instance app with no live users this is fine. When moving to a
+    # paid plan, move these two lines back into `preDeployCommand`.
+    #
+    # Seeding is idempotent and never grants an approval.
 
     startCommand: node apps/server/dist/main.js
 
@@ -78,14 +107,18 @@ services:
       - key: SESSION_SECRET
         generateValue: true          # Render generates and stores it
 
-      # Empty means same-origin only, which is correct here because this one
-      # service serves both the app and the API.
+      # The web app is served from this same service, so it needs no CORS
+      # entry. The Android app does: the Capacitor webview loads from the
+      # origin `https://localhost`, so every API call it makes is
+      # cross-origin and is rejected unless that origin is allowed here.
       #
-      # When you ship the Android app, set this to `https://localhost` in the
-      # Render dashboard — the Capacitor webview loads from that origin and
-      # therefore calls the API cross-origin.
+      # Set to `https://localhost` from the start because the APK is part of
+      # this deploy. Without it the Android app reaches the server and is
+      # then refused by the browser's CORS check -- which surfaces in the
+      # app as the same generic "could not reach the server" message as a
+      # wrong URL, and is correspondingly annoying to diagnose.
       - key: CORS_ORIGINS
-        value: ''
+        value: 'https://localhost'
 
       # --- the gate ---------------------------------------------------------
       # Do not change these without reading docs/COMPLIANCE.md. Setting the
