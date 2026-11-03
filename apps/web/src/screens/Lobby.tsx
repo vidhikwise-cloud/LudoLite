@@ -87,62 +87,84 @@ export function Lobby({
         </span>
       </div>
 
-      {/*
-        The ticket. The tear line and its notches are drawn by .codecard in
-        CSS and are positioned off the card's bottom edge, so the stub below
-        has to be the last thing in here -- see the note in styles.css.
-      */}
-      <div className="codecard">
-        <p className="cap">Room code</p>
-        <button
-          type="button"
-          className="code code-button"
-          onClick={() => void copy('code')}
-          title="Tap to copy"
-        >
-          {room.code.split('').map((char, i) => (
-            <span key={i} className="code-char" style={{ animationDelay: `${i * 60}ms` }}>
-              {char}
-            </span>
-          ))}
+      {/* The code as a single utility bar: the two things you do with a
+          code sit on it, rather than below a card. */}
+      <div className="codebar an dl1">
+        <span style={{ flex: 1, minWidth: 0 }}>
+          <span className="codebar-l">Room code</span>
+          <span className="codebar-c">
+            {room.code.split('').map((char, i) => (
+              <span key={i} style={{ animationDelay: `${0.12 + i * 0.07}s` }}>
+                {char}
+              </span>
+            ))}
+          </span>
+        </span>
+        <button type="button" className="c-copy" onClick={() => void copy('code')}>
+          {copied === 'code' ? 'Copied' : 'Copy'}
         </button>
-        <p className="hint">{copied === 'code' ? 'Code copied' : 'Tap the code to copy it'}</p>
-
-        {/* The stub: the two things you actually do with a code. */}
-        <div className="ticket-stub">
-          <button type="button" className="stubbtn" onClick={() => void copy('code')}>
-            {copied === 'code' ? 'Copied' : 'Copy code'}
-          </button>
-          <button type="button" className="stubbtn stub-primary" onClick={() => void share()}>
-            {copied === 'link' ? 'Link copied' : 'Share link'}
-          </button>
-        </div>
+        <button type="button" className="c-share" onClick={() => void share()}>
+          {copied === 'link' ? 'Sent' : 'Share'}
+        </button>
       </div>
 
-      <div className="players">
+      {/*
+        The table.
+
+        Seats sit AROUND a board rather than in a list, because an empty seat
+        should read as a gap at a table that wants filling -- which is what
+        it actually is -- instead of as a greyed-out row. The open seat is a
+        button: tapping it shares the code, since inviting someone is the
+        only thing you can usefully do about an empty chair.
+      */}
+      <div className="ptable an dl3">
         {seats.map((seat, index) => {
           const player = room.players.find((p) => p.seat === seat);
           const colour = SEAT_COLOR_BY_INDEX[seat as 0 | 1 | 2 | 3];
+          const delay = `${0.26 + index * 0.07}s`;
 
           if (!player) {
             return (
-              <div className="player empty" key={seat}>
-                <span className="avatar empty-avatar" aria-hidden="true">
-                  <span className="avatar-wait" />
+              <button
+                type="button"
+                className="pslot open"
+                key={seat}
+                onClick={() => void share()}
+                aria-label="Invite a friend to this seat"
+              >
+                <span className="av" style={{ animationDelay: delay }} aria-hidden="true">
+                  +
                 </span>
-                <span className="nm">Waiting for a friend…</span>
-                <span className="role">Seat {index + 1}</span>
-              </div>
+                <span className="nm">Open seat</span>
+                <span className="st">TAP TO INVITE</span>
+              </button>
             );
           }
 
           return (
             <div
-              className="player filled"
+              className={`pslot${player.isHost ? ' host' : ''}`}
               key={seat}
               style={{ ['--seat' as string]: `var(--${colour})` }}
             >
-              <span className="avatar" aria-hidden="true">
+              <span
+                className="av"
+                style={{
+                  animationDelay: delay,
+                  background: `var(--${colour}-sf)`,
+                  borderColor: `var(--${colour})`,
+                }}
+                aria-hidden="true"
+              >
+                {/*
+                  The initial, not a character.
+
+                  RoomPlayerView carries no avatar -- the server never sees
+                  one, because characters are local to a device -- so the
+                  only honest options are an initial or a generic silhouette.
+                  Showing OUR avatar on every seat would put the same face on
+                  four different people.
+                */}
                 {player.isBot ? '🤖' : player.displayName.slice(0, 1).toUpperCase()}
               </span>
               <span className="nm">
@@ -154,16 +176,14 @@ export function Lobby({
                   />
                 ) : null}
               </span>
-              <span
-                className={`role${player.isHost ? ' host' : ''}${player.isBot ? ' bot' : ''}`}
-              >
+              <span className="st">
                 {player.isBot
-                  ? 'Computer'
+                  ? 'COMPUTER'
                   : player.isHost
                     ? player.paidHost
-                      ? 'Host · paid'
-                      : 'Host'
-                    : 'Joined free'}
+                      ? 'HOST · PAID'
+                      : `HOST · ${colour.toUpperCase()}`
+                    : colour.toUpperCase()}
               </span>
             </div>
           );

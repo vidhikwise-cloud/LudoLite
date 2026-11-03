@@ -4008,6 +4008,526 @@ button.mission-xp:hover {
 .rematch-row .btn {
   flex: 1;
 }
+
+/* ==========================================================================
+ * KINETIC SHELL
+ *
+ * The dashboard structure and its motion system. Everything below belongs to
+ * the rebuilt screens -- Home, Lobby, Game chrome, Result, and the four tab
+ * destinations -- and is additive: nothing above this line was removed, so
+ * any screen still using the old stack renders exactly as before.
+ *
+ * Motion here is in four layers, and each answers a different question:
+ *
+ *   ambient   is this thing alive?       (washes, the particle field)
+ *   entrance  what matters most here?    (staggered assembly)
+ *   idle      what is waiting for me?    (the empty seat, the nudging die)
+ *   response  did it hear me?            (ripples, lifts, presses)
+ *
+ * All of it is decorative. The reduced-motion block at the end of this file
+ * stills the lot, and every element's RESTING state is its base rule rather
+ * than a keyframe endpoint -- so stillness is correct, never invisible.
+ * ========================================================================== */
+
+:root {
+  --e-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --e-bounce: cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  --e-soft: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* --- the ambient particle field ------------------------------------------ */
+/* Fixed behind everything, pointer-transparent, and paused when the tab is
+   hidden (see components/Sky.tsx) so it cannot drain a phone in the
+   background. */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+}
+.shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* --- entrance library ---------------------------------------------------- */
+@keyframes kPop {
+  from { opacity: 0; transform: translateY(18px) scale(0.95); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes kFlip {
+  from { opacity: 0; transform: perspective(600px) rotateX(-55deg) translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes kDrop {
+  0% { opacity: 0; transform: translateY(-44px) scale(0.55) rotate(-16deg); }
+  62% { opacity: 1; transform: translateY(6px) scale(1.1) rotate(5deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes kSlide {
+  from { opacity: 0; transform: translateX(-22px); }
+  to { opacity: 1; transform: none; }
+}
+.an { animation: kPop 0.6s var(--e-spring) both; }
+.an-f { animation: kFlip 0.7s var(--ease-out) both; }
+.an-d { animation: kDrop 0.85s var(--e-spring) both; }
+.an-l { animation: kSlide 0.55s var(--ease-out) both; }
+.dl1 { animation-delay: 0.04s; } .dl2 { animation-delay: 0.1s; }
+.dl3 { animation-delay: 0.16s; } .dl4 { animation-delay: 0.22s; }
+.dl5 { animation-delay: 0.28s; } .dl6 { animation-delay: 0.34s; }
+.dl7 { animation-delay: 0.4s; }  .dl8 { animation-delay: 0.46s; }
+.dl9 { animation-delay: 0.52s; } .dl10 { animation-delay: 0.58s; }
+.dl11 { animation-delay: 0.64s; } .dl12 { animation-delay: 0.7s; }
+
+/* --- ripple: every tappable surface -------------------------------------- */
+.rp { position: relative; overflow: hidden; }
+.rp .ink {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  transform: scale(0);
+  animation: kRipple 0.65s var(--ease-out) forwards;
+  pointer-events: none;
+}
+/* On pale surfaces a white ripple is invisible, so it inverts to ink. */
+.rp-dark .ink { background: rgba(35, 41, 73, 0.18); }
+@keyframes kRipple { to { transform: scale(3.4); opacity: 0; } }
+
+/* --- dashboard header ---------------------------------------------------- */
+.dash-bar { display: flex; align-items: center; gap: 11px; }
+.dash-me {
+  width: 44px; height: 44px; border-radius: 15px;
+  background: var(--yellow-sf); border: 1.5px solid #f0ddae;
+  display: grid; place-items: center; font-size: 23px; cursor: pointer;
+  padding: 0; transition: transform 0.45s var(--e-spring);
+}
+.dash-me:hover { transform: scale(1.16) rotate(-11deg); }
+.dash-who { flex: 1; line-height: 1.25; min-width: 0; }
+.dash-who b { display: block; font: 700 15.5px/1.25 var(--display); }
+.dash-who span { font-size: 11.5px; color: var(--ink-2); }
+.flame { display: inline-block; animation: kFlick 1.2s ease-in-out infinite; transform-origin: bottom; }
+@keyframes kFlick {
+  0%, 100% { transform: scale(1) rotate(0) translateY(0); }
+  30% { transform: scale(1.26) rotate(8deg) translateY(-2px); }
+  55% { transform: scale(0.93) rotate(-6deg); }
+  80% { transform: scale(1.12) rotate(3deg); }
+}
+.dash-lvl {
+  font: 800 11px/1 var(--mono); background: var(--night); color: #fff;
+  border-radius: 9px; padding: 7px 10px; position: relative; overflow: hidden;
+}
+.dash-lvl::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(72deg, transparent 42%, rgba(255,255,255,0.5) 50%, transparent 58%);
+  transform: translateX(-100%); animation: kSweep 4.5s 1.5s infinite;
+}
+@keyframes kSweep { 0% { transform: translateX(-100%); } 30%, 100% { transform: translateX(130%); } }
+
+/* --- the tile grid ------------------------------------------------------- */
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; perspective: 900px; }
+.tile {
+  border-radius: var(--radius-xl); padding: 15px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-end; min-height: 106px;
+  box-shadow: var(--lift-1); border: 1.5px solid var(--rule); background: var(--card);
+  cursor: pointer; text-align: left; font-family: var(--body); color: var(--ink);
+  transition: transform 0.45s var(--e-spring), box-shadow 0.45s var(--ease-out);
+}
+.tile:hover { transform: translateY(-7px) scale(1.03) rotateX(5deg); box-shadow: var(--lift-3); }
+.tile:active { transform: translateY(3px) scale(0.98); }
+.tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.tile-k { font: 800 15.5px/1.2 var(--display); }
+.tile-s { font-size: 11.5px; color: var(--ink-2); margin-top: 2px; }
+.tile-ic { position: absolute; top: 13px; left: 15px; font-size: 25px; z-index: 2;
+  animation: kBob 3.2s ease-in-out infinite; }
+@keyframes kBob {
+  0%, 100% { transform: translateY(0) rotate(0) scale(1); }
+  50% { transform: translateY(-7px) rotate(11deg) scale(1.08); }
+}
+
+/* The one dominant action. Marigold, drifting, with orbiting motes. */
+.tile-hero {
+  grid-column: 1 / -1; min-height: 156px; color: var(--accent-in);
+  border-color: var(--accent-edge);
+  background: linear-gradient(118deg, #ffd166, #ffb612, #f5a300, #ffc94d);
+  background-size: 300% 300%; animation: kDrift 9s ease-in-out infinite;
+}
+@keyframes kDrift { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.tile-hero::after {
+  content: ''; position: absolute; right: -26px; top: -26px; width: 150px; height: 150px;
+  border-radius: 50%; background: rgba(255,255,255,0.3); animation: kBreathe 4.2s ease-in-out infinite;
+}
+@keyframes kBreathe {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.2); opacity: 0.42; }
+}
+.tile-hero .tile-k { font-size: 25px; letter-spacing: -0.02em; position: relative; z-index: 2; }
+.tile-hero .tile-s { font-size: 12.5px; color: #6e5200; position: relative; z-index: 2; }
+.orb { position: absolute; font-size: 15px; opacity: 0.5; pointer-events: none; z-index: 1; }
+.orb-1 { animation: kOrbit 12s linear infinite; }
+.orb-2 { animation: kOrbit 16s linear infinite reverse; animation-delay: -4s; }
+.orb-3 { animation: kOrbit 20s linear infinite; animation-delay: -9s; }
+@keyframes kOrbit {
+  from { transform: rotate(0) translateX(64px) rotate(0); }
+  to { transform: rotate(360deg) translateX(64px) rotate(-360deg); }
+}
+.tile-dark { background: var(--night); border-color: var(--night); color: #fff; }
+.tile-dark .tile-s { color: rgba(255,255,255,0.72); }
+.tile-dark .tile-ic { animation-delay: 1.1s; }
+.tile-plain .tile-ic { animation-delay: 0.55s; }
+
+/* --- the live strip ------------------------------------------------------ */
+.livestrip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+.livestrip::-webkit-scrollbar { display: none; }
+.lchip {
+  display: flex; align-items: center; gap: 6px; background: var(--card);
+  border: 1.5px solid var(--rule); border-radius: 999px; padding: 6px 12px;
+  font: 650 11.5px/1 var(--body); white-space: nowrap; flex: 0 0 auto;
+  transition: transform 0.4s var(--e-spring), border-color 0.3s;
+}
+.lchip:hover { transform: translateY(-4px) scale(1.07); border-color: var(--accent); }
+.lchip .ldot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.lchip .ldot.live { animation: kRing 1.9s infinite; }
+@keyframes kRing {
+  0% { box-shadow: 0 0 0 0 rgba(0,168,104,0.7); }
+  70% { box-shadow: 0 0 0 9px rgba(0,168,104,0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,168,104,0); }
+}
+.num { font-variant-numeric: tabular-nums; }
+
+/* --- the mission step rail ----------------------------------------------- */
+.steprail { display: flex; align-items: flex-start; }
+.stepx { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; position: relative; }
+.stepx .bub {
+  width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 15px; background: var(--card); border: 2px solid var(--rule); z-index: 1;
+  transition: transform 0.45s var(--e-spring);
+}
+.stepx:hover .bub { transform: scale(1.2) rotate(8deg); }
+.stepx.done .bub { background: var(--green); border-color: var(--green); color: #fff;
+  animation: kStamp 0.6s var(--e-bounce) both; }
+@keyframes kStamp {
+  0% { transform: scale(0) rotate(-50deg); opacity: 0; }
+  60% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+.stepx.now .bub { background: var(--yellow); border-color: var(--accent-edge);
+  animation: kGlow 1.8s ease-in-out infinite; }
+@keyframes kGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,182,18,0.75); transform: scale(1); }
+  50% { box-shadow: 0 0 0 10px rgba(255,182,18,0); transform: scale(1.07); }
+}
+.stepx .bar {
+  position: absolute; top: 17px; left: 50%; width: 100%; height: 2.5px;
+  background: var(--rule); z-index: 0; overflow: hidden;
+}
+.stepx .bar::after {
+  content: ''; position: absolute; inset: 0; background: var(--green);
+  transform: scaleX(0); transform-origin: left;
+}
+.stepx.done .bar::after { animation: kFill 0.55s var(--e-soft) 0.5s forwards; }
+@keyframes kFill { to { transform: scaleX(1); } }
+.stepx:last-child .bar { display: none; }
+.stepx .lb { font: 700 9.5px/1.2 var(--body); color: var(--ink-2); text-align: center; }
+
+/* --- the XP line --------------------------------------------------------- */
+.xpline {
+  display: flex; align-items: center; gap: 10px; background: var(--card);
+  border: 1.5px solid var(--rule); border-radius: var(--radius-lg); padding: 11px 14px;
+}
+.xpline .track { flex: 1; height: 8px; border-radius: 99px; background: var(--xp-sf); overflow: hidden; }
+.xpline .track i {
+  display: block; height: 100%; border-radius: 99px; position: relative; transform-origin: left;
+  background: linear-gradient(90deg, var(--xp), #a98bff, var(--xp));
+  background-size: 200% 100%;
+  animation: kGrow 1.2s var(--ease-out) 0.55s both, kHue 3s linear 1.7s infinite;
+}
+@keyframes kGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes kHue { to { background-position: 200% 0; } }
+.xpline .track i::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.7), transparent);
+  transform: translateX(-100%); animation: kShim 2.4s 1.6s infinite;
+}
+@keyframes kShim { to { transform: translateX(220%); } }
+.xpline b { font: 800 11px/1 var(--body); color: var(--xp); white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
+
+/* --- the bottom tab bar -------------------------------------------------- */
+/* Sticks to the shell's floor. The shell's own bottom padding is removed
+   while it is present (see .shell.has-tabs) so it never covers content. */
+.tabbar {
+  position: sticky; bottom: 0; margin: auto -20px -48px; z-index: 5;
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
+  background: var(--card); border-top: 1.5px solid var(--rule);
+  padding: 9px 10px calc(14px + env(safe-area-inset-bottom, 0px));
+}
+.shell.has-tabs { padding-bottom: 0; }
+.tabbtn {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  background: none; border: 0; cursor: pointer; padding: 5px 0;
+  font: 700 9.5px/1.2 var(--body); color: var(--ink-3); position: relative;
+  transition: color 0.3s;
+}
+.tabbtn em { font-style: normal; font-size: 20px; display: block;
+  transition: transform 0.45s var(--e-spring); }
+.tabbtn:hover em { transform: translateY(-6px) scale(1.2) rotate(-7deg); }
+.tabbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 10px; }
+.tabbtn.on { color: var(--accent-ink); }
+.tabbtn.on em { animation: kNavBob 2.6s ease-in-out infinite; }
+@keyframes kNavBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.tabbtn.on::after {
+  content: ''; position: absolute; top: -9px; width: 22px; height: 3px;
+  border-radius: 0 0 3px 3px; background: var(--accent); animation: kTab 0.45s var(--e-spring);
+}
+@keyframes kTab { from { width: 0; opacity: 0; } to { width: 22px; opacity: 1; } }
+
+/* --- lobby: the table ---------------------------------------------------- */
+.codebar {
+  background: var(--night); border-radius: var(--radius-lg); padding: 14px 16px;
+  display: flex; align-items: center; gap: 13px; color: #fff; position: relative; overflow: hidden;
+}
+.codebar::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(72deg, transparent 40%, rgba(255,255,255,0.16) 50%, transparent 60%);
+  transform: translateX(-100%); animation: kSweep 5s 1.2s infinite;
+}
+.codebar-l { font: 700 9.5px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase;
+  color: #9aa3bd; display: block; margin-bottom: 5px; }
+.codebar-c { font: 700 31px/1 var(--mono); letter-spacing: 0.2em; display: flex; gap: 1px; }
+.codebar-c span { display: inline-block; animation: kChDrop 0.55s var(--e-bounce) both; }
+@keyframes kChDrop {
+  0% { opacity: 0; transform: translateY(-26px) rotate(-16deg) scale(0.5); }
+  68% { transform: translateY(4px) rotate(5deg) scale(1.14); }
+  100% { opacity: 1; transform: none; }
+}
+.codebar button {
+  border: 0; border-radius: 12px; padding: 10px 14px; font: 700 12px/1 var(--body);
+  cursor: pointer; z-index: 1; transition: transform 0.32s var(--e-spring), filter 0.3s;
+}
+.codebar button:hover { transform: translateY(-3px) scale(1.08); filter: brightness(1.14); }
+.codebar button:active { transform: translateY(2px) scale(0.94); }
+.codebar .c-share { background: var(--accent); color: var(--accent-in); }
+.codebar .c-copy { background: rgba(255,255,255,0.14); color: #fff; }
+
+.ptable {
+  position: relative; aspect-ratio: 1 / 0.84; background: var(--card);
+  border: 1.5px solid var(--rule); border-radius: var(--radius-xl);
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr;
+  place-items: center; gap: 8px; padding: 16px; box-shadow: var(--lift-1);
+}
+/* The board hint under the seats, and a dealer ring circling it. */
+.ptable::before {
+  content: ''; position: absolute; top: 50%; left: 50%; width: 58px; height: 58px;
+  border-radius: 16px; z-index: 0; pointer-events: none; opacity: 0.11;
+  background: conic-gradient(var(--red) 90deg, var(--green) 0 180deg, var(--yellow) 0 270deg, var(--blue) 0);
+  animation: kSpin 16s linear infinite;
+}
+@keyframes kSpin {
+  from { transform: translate(-50%,-50%) rotate(0); }
+  to { transform: translate(-50%,-50%) rotate(360deg); }
+}
+.ptable::after {
+  content: ''; position: absolute; top: 50%; left: 50%; width: 152px; height: 152px;
+  margin: -76px 0 0 -76px; border-radius: 50%; border: 2px dashed rgba(255,182,18,0.35);
+  animation: kSpin2 9s linear infinite; pointer-events: none; z-index: 0;
+}
+@keyframes kSpin2 { to { transform: rotate(360deg); } }
+.pslot { display: flex; flex-direction: column; align-items: center; gap: 5px; z-index: 1;
+  background: none; border: 0; padding: 0; font-family: var(--body); color: var(--ink); }
+.pslot .av {
+  width: 52px; height: 52px; border-radius: 17px; display: grid; place-items: center;
+  font-size: 26px; border: 2.5px solid transparent; position: relative;
+  animation: kSeatIn 0.7s var(--e-bounce) both; transition: transform 0.45s var(--e-spring);
+}
+@keyframes kSeatIn {
+  0% { opacity: 0; transform: scale(0.3) translateY(18px) rotate(-18deg); }
+  68% { transform: scale(1.16) rotate(6deg); }
+  100% { opacity: 1; transform: none; }
+}
+.pslot:hover .av { transform: scale(1.14) rotate(-7deg); }
+.pslot .nm { font: 700 12px/1.2 var(--body); }
+.pslot .st { font: 700 9.5px/1.2 var(--mono); color: var(--ink-3); letter-spacing: 0.04em; }
+.pslot.host .av::after {
+  content: '★'; position: absolute; top: -7px; right: -6px; width: 19px; height: 19px;
+  background: var(--yellow); border-radius: 50%; font-size: 9.5px; display: grid;
+  place-items: center; color: var(--ink); animation: kTwinkle 2.2s ease-in-out infinite;
+}
+@keyframes kTwinkle {
+  0%, 100% { transform: scale(1) rotate(0); }
+  50% { transform: scale(1.3) rotate(22deg); }
+}
+/* An empty seat asks, visibly, to be filled. */
+.pslot.open { cursor: pointer; }
+.pslot.open .av {
+  background: var(--paper); border: 2.5px dashed var(--rule); color: var(--ink-3);
+  font-size: 20px; animation: kSeatIn 0.7s var(--e-bounce) both, kWaiting 2.4s 0.8s ease-in-out infinite;
+}
+@keyframes kWaiting {
+  0%, 100% { border-color: var(--rule); transform: scale(1) rotate(0); }
+  50% { border-color: var(--accent); transform: scale(1.1) rotate(4deg); }
+}
+.pslot.open .nm { color: var(--ink-3); font-weight: 600; }
+.pslot.open .st { animation: kBlink 2.4s ease-in-out infinite; }
+@keyframes kBlink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; color: var(--accent-ink); } }
+
+/* --- game chrome --------------------------------------------------------- */
+.gstrip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.gchip {
+  background: var(--card); border: 1.5px solid var(--rule); border-radius: 13px;
+  padding: 7px 4px; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  min-width: 0; transition: all 0.45s var(--e-spring);
+}
+.gchip .gd { width: 8px; height: 8px; border-radius: 50%; background: var(--seat); flex: none; }
+.gchip .gn { font: 700 10px/1.2 var(--body); overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; max-width: 100%; }
+.gchip .gh { font: 700 9px/1 var(--mono); color: var(--ink-3); }
+.gchip.turn {
+  background: var(--night); border-color: var(--night); color: #fff;
+  transform: translateY(-4px) scale(1.04); animation: kTurn 2s ease-in-out infinite;
+}
+@keyframes kTurn {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(35,41,73,0.45); }
+  50% { box-shadow: 0 0 0 8px rgba(35,41,73,0); }
+}
+.gchip.turn .gh { color: rgba(255,255,255,0.62); }
+.gchip.turn .gd { animation: kDotP 1s ease-in-out infinite; }
+@keyframes kDotP { 50% { transform: scale(1.7); } }
+
+/* The action rail: the die sits at the thumb line with no card around it. */
+.actionrail { display: flex; align-items: center; gap: 12px; }
+.actionrail .msg { flex: 1; line-height: 1.3; }
+.actionrail .msg b { display: block; font: 700 14.5px/1.25 var(--display); }
+.actionrail .msg span { font-size: 11.5px; color: var(--ink-2); }
+
+/* --- result: the podium -------------------------------------------------- */
+.rays {
+  position: absolute; top: 6%; left: 50%; width: 360px; height: 360px; margin-left: -180px;
+  pointer-events: none; z-index: 0;
+  background: conic-gradient(from 0deg, transparent 0 12deg,
+    rgba(255,182,18,0.16) 12deg 20deg, transparent 20deg 32deg);
+  animation: kSpin2 22s linear infinite;
+}
+.podium { display: flex; align-items: flex-end; gap: 9px; position: relative; z-index: 1; }
+.pod {
+  flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 14px 14px 0 0; padding: 11px 6px; text-align: center;
+  transform-origin: bottom; animation: kRiseUp 0.8s var(--e-bounce) both;
+}
+@keyframes kRiseUp { from { opacity: 0; transform: scaleY(0.08); } to { opacity: 1; transform: scaleY(1); } }
+.pod.first { background: rgba(255,182,18,0.2); border-color: rgba(255,182,18,0.45); padding-bottom: 28px; }
+.pod .pa { font-size: 22px; display: inline-block; }
+.pod.first .pa { animation: kChamp 1.5s 0.95s ease-in-out infinite; }
+@keyframes kChamp {
+  0%, 100% { transform: translateY(0) rotate(0) scale(1); }
+  28% { transform: translateY(-10px) rotate(-11deg) scale(1.14); }
+  58% { transform: translateY(-3px) rotate(9deg) scale(1.04); }
+}
+.pod .pn { font: 700 10.5px/1.2 var(--body); margin-top: 4px; }
+.pod .pp { font: 800 10px/1 var(--mono); color: var(--ink-2); margin-top: 3px; }
+.earnrow { display: flex; gap: 8px; position: relative; z-index: 1; }
+.earnrow div {
+  flex: 1; background: rgba(255,255,255,0.08); border-radius: 13px; padding: 10px 4px;
+  text-align: center; transition: transform 0.4s var(--e-spring);
+}
+.earnrow div:hover { transform: translateY(-4px) scale(1.05); }
+.earnrow b { display: block; font: 800 17px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.earnrow span { font: 700 9px/1.2 var(--body); letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--ink-2); }
+
+/* --- record / locker / settings ------------------------------------------ */
+.bigstat {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px;
+}
+.bigstat .cell {
+  background: var(--card); border: 1.5px solid var(--rule); border-radius: var(--radius-lg);
+  padding: 15px; box-shadow: var(--lift-1); position: relative; overflow: hidden;
+  transition: transform 0.45s var(--e-spring), box-shadow 0.45s var(--ease-out);
+}
+.bigstat .cell:hover { transform: translateY(-5px); box-shadow: var(--lift-2); }
+.bigstat .cell b { display: block; font: 800 27px/1.1 var(--display);
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.bigstat .cell span { font: 700 10.5px/1.2 var(--body); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-3); }
+/*
+ * The decorative corner glyph. Scoped to a DIRECT child on purpose: as
+ * `.bigstat .cell i` it also matched the <i> bars of the form chart nested
+ * inside a cell, and being more specific than `.formrow i` it won -- so the
+ * bars were absolutely positioned into the corner and the chart rendered as
+ * an empty gap.
+ */
+.bigstat .cell > i {
+  position: absolute; right: 11px; top: 11px; font-size: 19px; font-style: normal; opacity: 0.5;
+  animation: kBob 3.6s ease-in-out infinite;
+}
+.bigstat .wide { grid-column: 1 / -1; }
+
+/* A horizontal bar chart of recent form. Bars grow on entry. */
+/*
+ * Recent-form bars.
+ *
+ * `align-items: flex-end` makes each bar's height its own, measured from the
+ * row's floor -- which only works because the row has an explicit height for
+ * the percentages to resolve against. Without it the bars collapse to zero
+ * and the row renders as an empty gap.
+ */
+.formrow {
+  display: flex; align-items: flex-end; gap: 5px;
+  height: 62px; min-height: 62px; margin-top: 10px;
+}
+/* `flex: 1` alone resolves to a zero basis here and the bars render with no
+   width at all. An explicit 0 basis plus grow is what actually shares the
+   row out between them. */
+.formrow i {
+  flex: 1 1 0; min-width: 4px; align-self: flex-end;
+  border-radius: 5px 5px 0 0; background: var(--rule); transform-origin: bottom;
+  animation: kBarGrow 0.7s var(--e-spring) both;
+}
+.formrow i.w { background: var(--green); }
+.formrow i.l { background: var(--rule); }
+@keyframes kBarGrow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+
+.lockgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.lockcard {
+  background: var(--card); border: 1.5px solid var(--rule); border-radius: var(--radius-lg);
+  padding: 13px 8px; display: flex; flex-direction: column; align-items: center; gap: 5px;
+  box-shadow: var(--lift-1); cursor: pointer; font-family: var(--body); color: var(--ink);
+  transition: transform 0.45s var(--e-spring), box-shadow 0.4s, border-color 0.3s;
+  animation: kPop 0.6s var(--e-spring) both;
+}
+.lockcard:hover:not(:disabled) { transform: translateY(-6px) scale(1.04); box-shadow: var(--lift-2); }
+.lockcard:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.lockcard em { font-style: normal; font-size: 27px; animation: kBob 3.4s ease-in-out infinite; }
+.lockcard .ln { font: 700 10.5px/1.25 var(--body); text-align: center; }
+.lockcard .lr { font: 700 8.5px/1.2 var(--mono); color: var(--ink-3); letter-spacing: 0.04em;
+  text-align: center; }
+.lockcard.equipped { border-color: var(--accent); background: var(--accent-sf); }
+.lockcard.equipped .lr { color: var(--accent-ink); }
+.lockcard:disabled { cursor: not-allowed; opacity: 0.55; box-shadow: none; border-style: dashed; }
+.lockcard:disabled em { animation: none; filter: grayscale(0.8); }
+
+.setrow {
+  display: flex; align-items: center; gap: 13px; width: 100%;
+  background: var(--card); border: 1.5px solid var(--rule); border-radius: var(--radius-lg);
+  padding: 14px 16px; box-shadow: var(--lift-1); cursor: pointer;
+  font-family: var(--body); color: var(--ink); text-align: left;
+  transition: transform 0.4s var(--e-spring), box-shadow 0.4s, border-color 0.3s;
+}
+.setrow:hover { transform: translateX(4px); box-shadow: var(--lift-2); border-color: var(--accent); }
+.setrow:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.setrow em { font-style: normal; font-size: 21px; flex: none; }
+.setrow .sm { flex: 1; min-width: 0; }
+.setrow .sm b { display: block; font: 700 14px/1.25 var(--display); }
+.setrow .sm span { font-size: 11.5px; color: var(--ink-2); }
+.setrow .chev { color: var(--ink-3); font-size: 17px; transition: transform 0.3s var(--e-spring); }
+.setrow:hover .chev { transform: translateX(3px); }
+
+/* A section heading for the rebuilt screens. */
+.khead { display: flex; align-items: baseline; justify-content: space-between; }
+.khead b { font: 800 12.5px/1 var(--body); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3); }
+.khead span { font: 650 11.5px/1 var(--body); color: var(--ink-2); }
+
 /*
  * Reduced motion.
  *
@@ -4050,5 +4570,49 @@ button.mission-xp:hover {
   .hero-letter {
     opacity: 1;
     transform: none;
+  }
+
+  /*
+   * The kinetic shell.
+   *
+   * The universal rule above collapses every animation to 0.01ms, which
+   * lands each element on its final keyframe. That is correct for the
+   * entrances -- they end at the resting state by construction.
+   *
+   * These three are different: they are pure decoration with no resting
+   * state worth showing, and freezing them leaves visible artefacts -- a
+   * particle field stopped mid-drift, godrays frozen as a lopsided fan,
+   * motes parked wherever their orbit happened to stop. They go entirely.
+   */
+  .sky,
+  .rays,
+  .orb {
+    display: none;
+  }
+
+  /* Belt and braces: anything mid-entrance must land visible, never stuck
+     at an opacity-0 or scaled-down start frame. */
+  .an,
+  .an-f,
+  .an-d,
+  .an-l,
+  .pod,
+  .lockcard,
+  .pslot .av,
+  .codebar-c span,
+  .formrow i {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Excluded from the reset above on purpose: the XP bar's scaleX IS its
+     value, so it has to stay at full scale rather than be zeroed to none. */
+  .xpline .track i {
+    opacity: 1 !important;
+    transform: scaleX(1) !important;
+  }
+
+  .stepx .bar::after {
+    transform: scaleX(1);
   }
 }

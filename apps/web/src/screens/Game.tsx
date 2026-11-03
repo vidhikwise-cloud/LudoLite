@@ -129,40 +129,14 @@ export function Game({
 
   return (
     <>
-      <div className={`turnbar${myTurn ? ' mine' : ''}`}>
-        <span
-          className="turn-tok"
-          style={{ background: `var(--${turnColour})` }}
-          aria-hidden="true"
-        />
-        <span className="turn-text">
-          <b>
-            {myTurn
-              ? 'Your turn'
-              : turnPlayer?.isBot
-                ? `🤖 ${turnPlayer.displayName}`
-                : (turnPlayer?.displayName ?? 'Waiting')}
-          </b>
-          <small>
-            {myTurn
-              ? needsRoll
-                ? 'Roll the dice'
-                : mustMove
-                  ? 'Tap a glowing token'
-                  : 'No moves available'
-              : turnPlayer?.isBot
-                ? 'is thinking…'
-                : 'is playing'}
-          </small>
-        </span>
-
-        <Dice
-          value={lastDie}
-          rolling={rolling}
-          disabled={!needsRoll}
-          onRoll={handleRoll}
-        />
-      </div>
+      {/*
+        Players compress to one slim row at the top, and the die moves to an
+        action rail at the thumb line. The old layout stacked a turn-bar
+        card, the board, the mascot and a 2x2 seat grid -- four bordered
+        boxes all competing with the board, which is the only thing on the
+        screen anyone is actually looking at.
+      */}
+      <SeatStrip room={room} state={state} mySeat={mySeat} />
 
       <Board
         state={state}
@@ -172,16 +146,47 @@ export function Game({
         pawn={progress.pawn}
       />
 
-      {/* Pippo sits under the board, where he is visible without competing
-          with the pieces for attention. */}
+      <div className="actionrail">
+        <Dice
+          value={lastDie}
+          rolling={rolling}
+          disabled={!needsRoll}
+          onRoll={handleRoll}
+        />
+        <span className="msg">
+          <b>
+            {myTurn
+              ? needsRoll
+                ? 'Your turn'
+                : mustMove
+                  ? `You rolled a ${lastDie ?? ''}`
+                  : 'No moves available'
+              : turnPlayer?.isBot
+                ? `🤖 ${turnPlayer.displayName}`
+                : (turnPlayer?.displayName ?? 'Waiting')}
+          </b>
+          <span>
+            {myTurn
+              ? needsRoll
+                ? 'Tap the die to roll'
+                : mustMove
+                  ? 'Tap a glowing token to move'
+                  : 'Your turn will pass'
+              : turnPlayer?.isBot
+                ? 'is thinking…'
+                : 'is playing'}
+          </span>
+        </span>
+      </div>
+
+      {/* Pippo reacts to how the match is going, below the rail where he is
+          visible without competing with the pieces. */}
       <MascotSays
         avatar={progress.avatar}
         mood={mood}
         line={mascotLine(mood, state.version)}
-        size={58}
+        size={52}
       />
-
-      <SeatStrip room={room} state={state} mySeat={mySeat} />
 
       <button type="button" className="btn-link" onClick={onLeave}>
         Leave match
@@ -202,40 +207,62 @@ function SeatStrip({
   state: MatchState;
   mySeat: SeatIndex | null;
 }) {
-  return (
-    <div className="seatstrip">
-      {state.seats
-        .filter((seat) => seat.playerId !== null)
-        .map((seat) => {
-          const player = room.players.find((p) => p.seat === seat.index);
-          const home = seat.tokens.filter((t) => t.position.kind === 'finish').length;
-          const isTurn = state.turnSeat === seat.index;
+  const seated = state.seats.filter((seat) => seat.playerId !== null);
 
-          return (
-            <div
-              key={seat.index}
-              className={`seatchip${isTurn ? ' active' : ''}`}
-              style={{ ['--seat' as string]: `var(--${SEAT_COLOR_BY_INDEX[seat.index]})` }}
-            >
-              <span className="seatchip-dot" aria-hidden="true" />
-              <span className="seatchip-name">
-                {seat.index === mySeat
-                  ? 'You'
-                  : player?.isBot
-                    ? `🤖 ${player.displayName}`
-                    : (player?.displayName ?? '—')}
-              </span>
-              <span className="seatchip-home" title={`${home} of 4 home`}>
-                {home}/4
-              </span>
-            </div>
-          );
-        })}
+  return (
+    <div className="gstrip">
+      {seated.map((seat, i) => {
+        const player = room.players.find((p) => p.seat === seat.index);
+        const home = seat.tokens.filter((t) => t.position.kind === 'finish').length;
+        const isTurn = state.turnSeat === seat.index;
+
+        return (
+          <div
+            key={seat.index}
+            className={`gchip${isTurn ? ' turn' : ''} an`}
+            style={{
+              ['--seat' as string]: `var(--${SEAT_COLOR_BY_INDEX[seat.index]})`,
+              animationDelay: `${0.04 + i * 0.06}s`,
+            }}
+            title={`${home} of 4 home`}
+          >
+            <span className="gd" aria-hidden="true" />
+            <span className="gn">
+              {seat.index === mySeat ? 'You' : (player?.displayName ?? '—')}
+            </span>
+            <span className="gh">{home}/4</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
+
+/**
+ * Reorders finishers so the winner stands in the middle.
+ *
+ * A podium reads 2nd–1st–3rd left to right. Each entry keeps its true
+ * `place` so the label can state the real rank; only the visual order moves.
+ * With two finishers it returns 1st then 2nd, because a two-column podium
+ * with a gap on the left reads as a missing player rather than as a layout.
+ */
+function podiumOrder(
+  standings: readonly SeatIndex[],
+): ReadonlyArray<{ seatIndex: SeatIndex; place: number }> {
+  const ranked = standings.map((seatIndex, place) => ({ seatIndex, place }));
+  if (ranked.length < 3) return ranked;
+
+  const [first, second, third, ...rest] = ranked;
+  return [second!, first!, third!, ...rest];
+}
+
+/** 1 -> "1ST". Uppercase, because the label is set in the mono caps style. */
+function ordinal(n: number): string {
+  const suffix = n === 1 ? 'ST' : n === 2 ? 'ND' : n === 3 ? 'RD' : 'TH';
+  return `${n}${suffix}`;
+}
 
 function MatchOver({
   room,
@@ -292,6 +319,10 @@ function MatchOver({
     <div className={`victory-stage${iWon ? ' won' : ''}`}>
       <Confetti active={iWon} style={progress.celebration} />
 
+      {/* Godrays, only for a win. On a loss they would be celebrating
+          somebody else's result at the person reading the screen. */}
+      {iWon ? <div className="rays" aria-hidden="true" /> : null}
+
       <div className={`victory${iWon ? ' won' : ''}`}>
         <div
           className="victory-crest"
@@ -322,28 +353,45 @@ function MatchOver({
         </p>
       </div>
 
-      <ol className="standings">
-        {standings.map((seatIndex, place) => {
+      {/*
+        The podium.
+
+        Rank is read as HEIGHT before it is read as a number: first place is
+        the tall column in the middle, which is how every podium works and
+        why it beats an ordered list of equal rows. The columns are ordered
+        2nd, 1st, 3rd across so the winner sits in the centre -- so the
+        visual order deliberately differs from the ranking order, and the
+        place label on each column is what states the actual rank.
+      */}
+      <div className="podium">
+        {podiumOrder(standings).map(({ seatIndex, place }) => {
           const player = room.players.find((p) => p.seat === seatIndex);
           const seat = state.seats.find((s) => s.index === seatIndex);
           const home = seat?.tokens.filter((t) => t.position.kind === 'finish').length ?? 0;
+          const colour = SEAT_COLOR_BY_INDEX[seatIndex];
 
           return (
-            <li
+            <div
               key={seatIndex}
-              className={`standing${seatIndex === mySeat ? ' me' : ''}`}
-              style={{ ['--seat' as string]: `var(--${SEAT_COLOR_BY_INDEX[seatIndex]})` }}
+              className={`pod${place === 0 ? ' first' : ''}`}
+              style={{
+                ['--seat' as string]: `var(--${colour})`,
+                animationDelay: `${0.3 + place * 0.1}s`,
+              }}
             >
-              <span className="standing-place">{place + 1}</span>
-              <span className="standing-dot" aria-hidden="true" />
-              <span className="standing-name">
-                {seatIndex === mySeat ? 'You' : (player?.displayName ?? 'Left the game')}
-              </span>
-              <span className="standing-home">{home}/4 home</span>
-            </li>
+              <div className="pa" aria-hidden="true">
+                {place === 0 ? '🏆' : '🎲'}
+              </div>
+              <div className="pn">
+                {seatIndex === mySeat ? 'You' : (player?.displayName ?? 'Left')}
+              </div>
+              <div className="pp">
+                {ordinal(place + 1)} · {home}/4
+              </div>
+            </div>
           );
         })}
-      </ol>
+      </div>
 
       {tally ? (
         <XpTally lines={tally.lines} total={tally.total} progress={progress} />

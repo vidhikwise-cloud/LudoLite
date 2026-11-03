@@ -6,6 +6,8 @@ import { BrandBar } from './components/Brand.js';
 import { ConnectionStatus, type ConnectionState } from './components/ConnectionStatus.js';
 import { MuteToggle } from './components/MuteToggle.js';
 import { RewardToasts, type RewardToast, type TallyLine } from './components/Progress.js';
+import { Sky } from './components/Sky.js';
+import { TabBar, type Tab } from './components/TabBar.js';
 import { Tour, hasSeenTour } from './components/Tour.js';
 import * as api from './lib/api.js';
 import {
@@ -21,21 +23,50 @@ import { Home } from './screens/Home.js';
 import { JoinRoom } from './screens/JoinRoom.js';
 import { Legal } from './screens/Legal.js';
 import { Lobby } from './screens/Lobby.js';
+import { Locker } from './screens/Locker.js';
 import { PlayComputer } from './screens/PlayComputer.js';
-import { Profile } from './screens/Profile.js';
-import { Unlocks } from './screens/Unlocks.js';
+import { Record } from './screens/Record.js';
+import { Settings } from './screens/Settings.js';
 
 type Screen =
   | 'home'
   | 'create'
   | 'join'
   | 'computer'
-  | 'profile'
-  | 'unlocks'
+  | 'record'
+  | 'locker'
+  | 'settings'
   | 'room'
   | 'privacy'
   | 'terms'
   | 'refund';
+
+/**
+ * Which screens are tab destinations, and which tab owns each.
+ *
+ * A screen reached FROM a tab (create, join, the legal pages) keeps that
+ * tab lit, so the bar never goes blank underneath a sub-screen and the
+ * player can always see where they are.
+ */
+const TAB_OF: Partial<Record<Screen, Tab>> = {
+  home: 'play',
+  create: 'play',
+  join: 'play',
+  computer: 'play',
+  record: 'record',
+  locker: 'locker',
+  settings: 'settings',
+  privacy: 'settings',
+  terms: 'settings',
+  refund: 'settings',
+};
+
+const SCREEN_OF: Record<Tab, Screen> = {
+  play: 'home',
+  record: 'record',
+  locker: 'locker',
+  settings: 'settings',
+};
 
 const LEGAL_SCREENS = ['privacy', 'terms', 'refund'] as const;
 type LegalScreen = (typeof LEGAL_SCREENS)[number];
@@ -569,6 +600,9 @@ export function App() {
     );
   }
 
+  /* Navigation is hidden inside a room -- see the note at the TabBar. */
+  const showTabs = screen !== 'room';
+
   return (
     /*
      * The chosen board theme is published here as a data attribute, and the
@@ -577,9 +611,16 @@ export function App() {
      * knows nothing about themes, so a new theme is a block of CSS rather
      * than a change to the renderer.
      */
-    <div className="shell" data-theme={progress.theme}>
-      {/* Sound matters most in a room, so the control lives there and on
-          home. Home renders its own inside the brand bar. */}
+    <div
+      className={`shell${showTabs ? ' has-tabs' : ''}`}
+      data-theme={progress.theme}
+    >
+      {/* The ambient particle field, behind everything. Mounted once at the
+          root so it survives screen changes rather than restarting on each
+          one, and it draws nothing under prefers-reduced-motion. */}
+      <Sky />
+
+      {/* Sound matters most in a room; elsewhere it lives in Settings. */}
       {screen === 'room' ? (
         <div className="toolbar">
           <MuteToggle />
@@ -591,7 +632,6 @@ export function App() {
           config={config}
           progress={progress}
           onProgressChange={setProgress}
-          onOpenProfile={() => setScreen('profile')}
           onCreate={() => {
             setError(null);
             setScreen('create');
@@ -607,21 +647,18 @@ export function App() {
         />
       ) : null}
 
-      {screen === 'profile' ? (
-        <Profile
-          progress={progress}
-          onProgressChange={setProgress}
-          onBack={() => setScreen('home')}
-          onReplayTour={() => setTourOpen(true)}
-          onOpenUnlocks={() => setScreen('unlocks')}
-        />
+      {screen === 'record' ? <Record progress={progress} /> : null}
+
+      {screen === 'locker' ? (
+        <Locker progress={progress} onProgressChange={setProgress} />
       ) : null}
 
-      {screen === 'unlocks' ? (
-        <Unlocks
+      {screen === 'settings' ? (
+        <Settings
+          config={config}
           progress={progress}
-          onProgressChange={setProgress}
-          onBack={() => setScreen('profile')}
+          onReplayTour={() => setTourOpen(true)}
+          onOpenLegal={(page) => setScreen(page)}
         />
       ) : null}
 
@@ -699,23 +736,25 @@ export function App() {
       ) : null}
 
       {isLegal(screen) ? (
-        <Legal page={screen} onBack={() => setScreen('home')} />
+        <Legal page={screen} onBack={() => setScreen('settings')} />
       ) : null}
 
-      {/* Required for a public service, and for Play Store review. Hidden
-          during a match so it cannot be tapped by mistake mid-turn. */}
-      {screen !== 'room' ? (
-        <nav className="footer-links" aria-label="Legal">
-          <button type="button" onClick={() => setScreen('privacy')}>
-            Privacy
-          </button>
-          <button type="button" onClick={() => setScreen('terms')}>
-            Terms
-          </button>
-          <button type="button" onClick={() => setScreen('refund')}>
-            Refunds
-          </button>
-        </nav>
+      {/*
+        The tab bar.
+
+        Deliberately absent in a room: mid-match a row of navigation sits
+        exactly where the thumb rests, and the board wants the height. The
+        legal pages it replaces are still one tap from Settings, which is
+        what Play Store review needs.
+      */}
+      {showTabs ? (
+        <TabBar
+          active={TAB_OF[screen] ?? 'play'}
+          onSelect={(tab) => {
+            setError(null);
+            setScreen(SCREEN_OF[tab]);
+          }}
+        />
       ) : null}
     </div>
   );
