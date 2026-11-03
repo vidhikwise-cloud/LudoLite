@@ -4256,12 +4256,29 @@ button.mission-xp:hover {
 /* --- the bottom tab bar -------------------------------------------------- */
 /* Sticks to the shell's floor. The shell's own bottom padding is removed
    while it is present (see .shell.has-tabs) so it never covers content. */
+/*
+ * NO `margin-top: auto` here.
+ *
+ * The obvious way to pin a bar to the bottom of a flex column is an auto
+ * top margin, and it is wrong for this one. `.shell` is `min-height: 100vh`,
+ * so on any screen whose content is shorter than the viewport the auto
+ * margin absorbs ALL the leftover height -- pushing the content above it
+ * down by close to a full screen. The app opened on blank space and you had
+ * to scroll down to find Home.
+ *
+ * `position: sticky; bottom: 0` already keeps the bar at the foot of the
+ * viewport while content scrolls under it, which is the behaviour actually
+ * wanted, and it needs no spare height to do it. The negative side margins
+ * cancel the shell's 20px padding so the bar reaches both edges.
+ */
 .tabbar {
-  position: sticky; bottom: 0; margin: auto -20px -48px; z-index: 5;
+  position: sticky; bottom: 0; margin: 0 -20px; z-index: 5;
   display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
   background: var(--card); border-top: 1.5px solid var(--rule);
   padding: 9px 10px calc(14px + env(safe-area-inset-bottom, 0px));
 }
+/* The bar is the last child and sticks to the floor, so the shell's own
+   bottom padding would only add dead space beneath it. */
 .shell.has-tabs { padding-bottom: 0; }
 .tabbtn {
   display: flex; flex-direction: column; align-items: center; gap: 3px;
