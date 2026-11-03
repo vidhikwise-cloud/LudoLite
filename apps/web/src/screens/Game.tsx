@@ -276,7 +276,20 @@ function MatchOver({
   ];
 
   return (
-    <>
+    /*
+     * The night sky.
+     *
+     * This is the ONE dark surface in a deliberately light-only app, and it
+     * is the one screen you have to earn your way to. Everything from the
+     * crest down to the rematch buttons sits inside it, so the moment reads
+     * as a single lit stage rather than as dark patches between pale cards.
+     *
+     * `.victory-stage` re-points the ink and surface tokens for its whole
+     * subtree, so the components inside it keep using --ink / --card exactly
+     * as they do everywhere else and need no dark-specific rules of their
+     * own. Adding a component here costs nothing.
+     */
+    <div className={`victory-stage${iWon ? ' won' : ''}`}>
       <Confetti active={iWon} style={progress.celebration} />
 
       <div className={`victory${iWon ? ' won' : ''}`}>
@@ -360,6 +373,6 @@ function MatchOver({
       <div style={{ marginTop: 14 }}>
         <ReactionBar onReact={onReact} />
       </div>
-    </>
+    </div>
   );
 }

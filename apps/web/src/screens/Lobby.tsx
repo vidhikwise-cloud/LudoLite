@@ -87,6 +87,11 @@ export function Lobby({
         </span>
       </div>
 
+      {/*
+        The ticket. The tear line and its notches are drawn by .codecard in
+        CSS and are positioned off the card's bottom edge, so the stub below
+        has to be the last thing in here -- see the note in styles.css.
+      */}
       <div className="codecard">
         <p className="cap">Room code</p>
         <button
@@ -102,6 +107,16 @@ export function Lobby({
           ))}
         </button>
         <p className="hint">{copied === 'code' ? 'Code copied' : 'Tap the code to copy it'}</p>
+
+        {/* The stub: the two things you actually do with a code. */}
+        <div className="ticket-stub">
+          <button type="button" className="stubbtn" onClick={() => void copy('code')}>
+            {copied === 'code' ? 'Copied' : 'Copy code'}
+          </button>
+          <button type="button" className="stubbtn stub-primary" onClick={() => void share()}>
+            {copied === 'link' ? 'Link copied' : 'Share link'}
+          </button>
+        </div>
       </div>
 
       <div className="players">
@@ -200,10 +215,8 @@ export function Lobby({
             {full ? 'Waiting for the host to start' : `Waiting for ${waiting} more`}
           </button>
         )}
-
-        <button type="button" className="btn btn-ghost" onClick={() => void share()}>
-          {copied === 'link' ? 'Link copied' : 'Invite friends'}
-        </button>
+        {/* Sharing used to live here as well. It is on the ticket stub now,
+            which is where someone looks when they want to pass the code on. */}
       </div>
 
       {/* Cancellation is offered only where a refund is actually possible. */}
