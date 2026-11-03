@@ -1,5 +1,5 @@
 /*
- * LudoLite.
+ * LudoLite -- "Game Night".
  *
  * LIGHT ONLY. The dark scheme is deliberately not implemented: a dark board
  * game reads as a betting app to adults and as drab to children, and this
@@ -8,91 +8,131 @@
  *
  * The palette has to work for a nine-year-old and their parent at once.
  * That rules out both ends: pastel reads as a toy, neon-on-black reads as a
- * casino. What works for both is SATURATED COLOUR ON WHITE -- the register
- * of a good board game box. Bright, confident, printed.
+ * casino. What works for both is SATURATED COLOUR ON WARM PAPER -- the
+ * register of a good board game box. Bright, confident, printed.
+ *
+ * Ludo descends from Pachisi, played on cloth. Hence the ground: a warm
+ * paper rather than a cool white, with DEEP INDIGO ink instead of brown.
+ * Indigo is crisper against warm paper than brown is, and it gives the brand
+ * a legitimate night colour -- used in exactly one place, the victory
+ * screen, so that darkness is something you earn rather than the default.
  *
  * The four seat colours are the brand. They are tuned here to stay vivid on
- * white while keeping enough contrast for text to sit on them, and they are
+ * paper while keeping enough contrast for text to sit on them, and they are
  * never used for anything except seats, so a colour on screen always means
  * a player.
+ *
+ * THE ACCENT IS MARIGOLD, NOT RED. Previously --accent and --red were the
+ * same hex, which broke the rule directly above: the primary button and the
+ * red player were one colour, so "the bright thing" was ambiguous. Marigold
+ * is a festival colour, it is not a seat, and it cannot be mistaken for a
+ * player. Action-colour and player-colour are now disjoint.
  */
 
 :root {
   color-scheme: light;
 
-  /* Ground: a clean near-white with the faintest warmth, so the saturated
-     colours have somewhere bright to sit. */
-  /* Only a trace of warmth. #fdfaf6 was far enough into cream that the
-     whole app read yellowish on an OLED phone, and it fought the white
-     cards sitting on it. The colour should come from the game pieces, not
-     from the paper. */
-  --paper: #fcfbf9;
-  --paper-2: #f2eee9;
+  /* Ground: warm paper. Enough warmth to read as paper rather than screen,
+     stopping well short of the cream that made the old #fdfaf6 look
+     yellowish on OLED. The colour comes from the game pieces; the paper
+     only has to be hospitable to them. */
+  --paper: #fcf8f1;
+  --paper-2: #f3ece0;
   --card: #ffffff;
 
-  /* Ink is a very dark warm brown rather than black: softer against white
-     over a long session, still well past AA contrast. */
-  --ink: #2a211d;
-  --ink-2: #6d5f58;
-  --ink-3: #9c8d85;
-  /* Borders and grid lines. #ead9c7 was a tan, and because it outlines
-     every card, chip and board square it tinted the whole interface warm.
-     A near-neutral grey with a hint of warmth does the same job without
-     colouring the page. */
-  --rule: #e6e1da;
+  /* Ink is deep indigo rather than warm brown: crisper on warm paper, and
+     it doubles as the brand's night colour. Well past AA on every surface
+     it is used on. */
+  --ink: #232949;
+  --ink-2: #656a87;
+  --ink-3: #9a9db2;
+  /* Borders and grid lines. Because this outlines every card, chip and
+     board square, it has to be quiet -- a warm near-neutral that sits on
+     paper without tinting the page. */
+  --rule: #e9e2d4;
 
   /* Seat colours. Brighter and more saturated than before -- these are the
      game's identity and they should read from across a table. */
-  --red: #ef4352;
-  --green: #22a95e;
-  --yellow: #f6b312;
-  --blue: #2f7fe0;
+  --red: #ff4d5d;
+  --green: #00a868;
+  --yellow: #ffb612;
+  --blue: #3e7bfa;
 
-  /* A warm coral-red primary: energetic without being alarming, and it does
-     not read as "error" the way a pure red does. */
-  --accent: #ef4352;
-  --accent-in: #ffffff;
-  --accent-sf: #ffeef0;
+  /* Marigold. The primary action colour, and deliberately NOT a seat
+     colour -- see the header note. Ink sits on it rather than white,
+     because dark-on-marigold is the pairing that passes contrast. */
+  --accent: #ffb612;
+  --accent-in: #232949;
+  --accent-sf: #fff3d6;
+  /* The stamped bottom edge that makes buttons read as pressable tokens
+     rather than floating cards. */
+  --accent-edge: #d79700;
+  /*
+   * Marigold for TEXT and thin strokes.
+   *
+   * --accent at #ffb612 is ~1.9:1 on white: correct as a large filled
+   * surface with ink on top, unreadable as type. Anywhere the accent is
+   * the foreground -- a link, a count, an emphasised value -- it must be
+   * this instead, which clears AA on both --card and --paper.
+   */
+  --accent-ink: #8a5a00;
+
+  /* Seat surfaces: each seat colour at card strength, for avatar wells and
+     icon discs. Precomputed rather than color-mix'd so old Android
+     WebViews get them too. */
+  --red-sf: #ffe9eb;
+  --green-sf: #e1f6ec;
+  --yellow-sf: #fff3d6;
+  --blue-sf: #e7efff;
+
+  /* Night. The victory screen, and nothing else. */
+  --night: #232949;
+  --night-2: #2d3560;
+  --night-3: #3a4379;
+  --night-ink: #ffffff;
+  --night-ink-2: #b9bdd9;
 
   /* Secondary accent for progression. Purple is the one hue not used by a
      seat, so XP can never be mistaken for a player's colour. */
   --xp-deep: #6d4bd8;
 
-  --ok-bg: #e4f6ec;
-  --ok-ink: #11803f;
-  --warn-bg: #fff2d6;
+  --ok-bg: #e1f6ec;
+  --ok-ink: #0a7a4a;
+  --warn-bg: #fff3d6;
   --warn-ink: #8a5f05;
-  --off-bg: #f1ebe4;
-  --off-ink: #6d5f58;
-  --danger-bg: #ffe9ea;
-  --danger-ink: #c32733;
+  --off-bg: #f1ece2;
+  --off-ink: #656a87;
+  --danger-bg: #ffe9eb;
+  --danger-ink: #d02b3c;
 
   --display: 'Trebuchet MS', 'Lucida Grande', 'Segoe UI', system-ui, sans-serif;
   --body: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif;
   --mono: 'Cascadia Mono', 'Consolas', 'SF Mono', ui-monospace, monospace;
 
-  --shadow: 0 1px 2px rgba(35, 28, 26, 0.05), 0 8px 24px -12px rgba(35, 28, 26, 0.18);
   --radius: 12px;
 
   /*
    * Surface tokens.
    *
-   * Depth comes from layered shadows and a wood tone for board furniture
-   * (the die's side wall, board edges) -- the materials of an actual board
-   * game rather than of software.
+   * Depth comes from layered shadows plus a STAMPED BOTTOM EDGE on things
+   * meant to be pressed -- buttons, the die, seat tokens. A hard edge reads
+   * as a moulded plastic piece; a soft blur reads as a card floating in
+   * software. The board-game register is the former.
+   *
+   * The wood tones are board furniture: the die's side wall and board edges.
    */
   --wood: #c88a52;
   --wood-2: #9a6536;
   --wood-ink: #4a3526;
   --felt: #fffdf9;
 
-  /* A three-layer shadow reads as a physical object lifted off the page,
-     where a single blur reads as a drop shadow on a flat rectangle. */
-  --lift-1: 0 1px 2px rgba(35, 28, 26, 0.06), 0 2px 6px -2px rgba(35, 28, 26, 0.1);
-  --lift-2: 0 1px 2px rgba(35, 28, 26, 0.06), 0 6px 16px -6px rgba(35, 28, 26, 0.16),
-    0 16px 32px -16px rgba(35, 28, 26, 0.18);
-  --lift-3: 0 2px 4px rgba(35, 28, 26, 0.08), 0 12px 28px -8px rgba(35, 28, 26, 0.2),
-    0 28px 56px -24px rgba(35, 28, 26, 0.26);
+  /* Shadow ink is the indigo of --ink, not a neutral grey: a shadow tinted
+     with the page's own ink reads as one lighting model rather than two. */
+  --lift-1: 0 1px 2px rgba(35, 41, 73, 0.07), 0 2px 6px -2px rgba(35, 41, 73, 0.11);
+  --lift-2: 0 1px 2px rgba(35, 41, 73, 0.07), 0 6px 16px -6px rgba(35, 41, 73, 0.17),
+    0 16px 32px -16px rgba(35, 41, 73, 0.2);
+  --lift-3: 0 2px 4px rgba(35, 41, 73, 0.09), 0 12px 28px -8px rgba(35, 41, 73, 0.22),
+    0 28px 56px -24px rgba(35, 41, 73, 0.28);
 
   /* Inset highlight along the top edge: the cue that a surface is raised. */
   --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.7);
@@ -105,8 +145,8 @@
   --ease: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
-  --xp: #6d4bd8;
-  --xp-sf: #efe9ff;
+  --xp: #7a5cf0;
+  --xp-sf: #efeaff;
   --streak: #f2741a;
   --streak-sf: #fff0e2;
 }
@@ -167,7 +207,7 @@ body {
   margin: 0 0 12px;
 }
 .headline .rupee {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .screen-title {
   font-family: var(--display);
@@ -214,13 +254,13 @@ body {
 .btn-primary {
   background: var(--accent);
   color: var(--accent-in);
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06), 0 6px 16px -8px var(--accent);
+  border-color: var(--accent-edge);
 }
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 .btn-ghost {
-  background: transparent;
+  background: var(--card);
   color: var(--ink);
   border-color: var(--rule);
 }
@@ -255,6 +295,30 @@ body {
   text-underline-offset: 2px;
   cursor: pointer;
   padding: 4px;
+}
+
+/*
+ * The three promises, as chips.
+ *
+ * Home renders `.promise-chips` and had NO rule for it -- the chips were
+ * shipping as a run of bare text. They are reassurance rather than a feature
+ * list, so they want to read in a glance and then get out of the way: quiet
+ * outlined pills, not cards.
+ */
+.promise-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.promise-chip {
+  font: 650 11.5px/1 var(--body);
+  color: var(--ink-2);
+  background: var(--card);
+  border: 1.5px solid var(--rule);
+  border-radius: 999px;
+  padding: 7px 13px;
+  box-shadow: var(--lift-1);
 }
 
 /* --- promises ----------------------------------------------------------- */
@@ -447,7 +511,7 @@ body {
 }
 .receipt-row.total .v {
   font-size: 18px;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .receipt-row.free .v {
   color: var(--green);
@@ -572,31 +636,80 @@ body {
 }
 
 /* --- room code ---------------------------------------------------------- */
+/*
+ * THE TICKET.
+ *
+ * The invite code is the most-shared object in the whole app -- it gets read
+ * aloud across a room, photographed, and pasted into chats -- and it used to
+ * be a dashed grey box. Here it is a cloakroom ticket: the woven four-seat
+ * ribbon along the top, the code set huge in mono, and a perforated tear
+ * line above the actions.
+ *
+ * The two notches are circles in the PAGE colour sitting over the card's
+ * edges. That only looks right while the card sits directly on --paper, so
+ * do not nest this inside another surface without changing their fill.
+ */
+/*
+ * No `overflow: hidden` here, deliberately.
+ *
+ * Clipping would square off the two tear notches, which hang half outside
+ * the card's left and right edges on purpose. The ribbon is kept inside the
+ * rounded corners by its own border-radius instead.
+ */
 .codecard {
-  border: 1.5px dashed var(--rule);
-  border-radius: 13px;
-  padding: 17px;
+  position: relative;
+  border: 1.5px solid var(--rule);
+  border-radius: var(--radius-lg);
+  padding: 22px 18px 18px;
   text-align: center;
-  background: var(--paper-2);
+  background: var(--card);
+  box-shadow: var(--lift-2), var(--sheen);
 }
+
+/* The woven ribbon: four seats, repeating. Marks every shared surface.
+   Inset by the border width and radiused to match, so it sits inside the
+   card's rounded top corners without needing the card to clip. */
+.codecard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 7px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--red) 0 36px,
+    var(--green) 36px 72px,
+    var(--yellow) 72px 108px,
+    var(--blue) 108px 144px
+  );
+}
+
 .codecard .cap {
   font-family: var(--mono);
   font-size: 10.5px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink-3);
-  margin: 0 0 9px;
+  margin: 4px 0 2px;
 }
+/*
+ * Set as large as four characters can go inside the shell's 460px and still
+ * leave the tap target room to breathe. This is meant to be legible to
+ * someone squinting at it from the other side of a sofa.
+ */
 .code {
   font-family: var(--mono);
-  font-size: 34px;
+  font-size: 52px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
   margin: 0;
   line-height: 1.1;
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
 }
 .code-button {
   background: none;
@@ -634,6 +747,76 @@ body {
   font-size: 12px;
   color: var(--ink-2);
   margin: 9px 0 0;
+}
+
+/*
+ * The ticket stub.
+ *
+ * The perforation is a top border on the stub rather than an absolutely
+ * positioned line on the card, so it is always exactly where the stub
+ * begins no matter how the code above it wraps or how long the hint is.
+ *
+ * The notches are its own ::before/::after: circles filled in the PAGE
+ * colour, pulled half outside each edge so they read as bites taken out of
+ * the card. Negative margins on the container let the border reach the full
+ * width despite the card's padding.
+ */
+.ticket-stub {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  margin: 16px -18px 0;
+  padding: 16px 18px 0;
+  border-top: 2.5px dashed var(--rule);
+}
+.ticket-stub::before,
+.ticket-stub::after {
+  content: '';
+  position: absolute;
+  top: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1.5px solid var(--rule);
+}
+.ticket-stub::before {
+  left: -12px;
+}
+.ticket-stub::after {
+  right: -12px;
+}
+
+.stubbtn {
+  flex: 1;
+  padding: 11px 10px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--rule);
+  background: var(--card);
+  color: var(--ink);
+  font: 700 13.5px/1 var(--body);
+  cursor: pointer;
+  box-shadow: var(--lift-1);
+  transition: transform 140ms var(--ease), box-shadow 140ms var(--ease-out);
+}
+.stubbtn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--lift-2);
+}
+.stubbtn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+.stubbtn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Sharing is the action that actually gets a friend into the room, so it is
+   the one that carries the ink. */
+.stub-primary {
+  background: var(--night);
+  border-color: var(--night);
+  color: var(--night-ink);
 }
 
 /* --- players ------------------------------------------------------------ */
@@ -729,7 +912,7 @@ body {
 }
 .player .role.host {
   background: var(--accent-sf);
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .player.empty {
   border-style: dashed;
@@ -862,8 +1045,8 @@ body {
 }
 
 .board-wrap {
-  filter: drop-shadow(0 10px 22px rgba(35, 28, 26, 0.16))
-    drop-shadow(0 2px 4px rgba(35, 28, 26, 0.1));
+  filter: drop-shadow(0 10px 22px rgba(35, 41, 73, 0.16))
+    drop-shadow(0 2px 4px rgba(35, 41, 73, 0.1));
 }
 
 /*
@@ -1140,7 +1323,7 @@ body {
   box-shadow:
     inset 0 2px 2px rgba(255, 255, 255, 0.55),
     inset 0 -3px 3px rgba(0, 0, 0, 0.3),
-    0 1px 2px rgba(35, 28, 26, 0.35);
+    0 1px 2px rgba(35, 41, 73, 0.35);
 }
 .turn-text {
   display: flex;
@@ -1163,8 +1346,15 @@ body {
 /* --- dice ---------------------------------------------------------------- */
 /*
  * The die is the most-tapped object in the game, so it is built as a real
- * one: an ivory cube with a lit top-left face, a visible side wall under
- * it, and pips that are carved rather than printed.
+ * one: a white cube with a lit top-left face, a visible side wall under it,
+ * and pips that are carved rather than printed.
+ *
+ * The side wall is INDIGO rather than the old wood brown. On warm paper an
+ * ivory die with a brown wall had almost no edge -- the two warm tones ran
+ * together and the cube lost its silhouette. A white face against an indigo
+ * wall is the same contrast relationship the rest of the app uses, and it
+ * matches the stamped indigo edge on the buttons, so every pressable object
+ * now shares one construction.
  *
  * The 3px solid shadow under the cube is the "side" of the die. Pressing
  * removes it and drops the cube by the same amount, which is why the tap
@@ -1177,16 +1367,16 @@ body {
   height: 58px;
   padding: 0;
   border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--wood-2) 45%, var(--rule));
-  background: linear-gradient(145deg, #fffdf9 0%, #f6efe2 55%, #e9dcc8 100%);
+  border: 1.5px solid var(--night);
+  background: linear-gradient(145deg, #ffffff 0%, #fdfaf4 55%, #f4ece0 100%);
   cursor: pointer;
   display: grid;
   place-items: center;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -2px 3px rgba(120, 90, 50, 0.16),
-    0 3px 0 var(--wood-2),
-    0 6px 12px -3px rgba(35, 28, 26, 0.35);
+    inset 0 -2px 3px rgba(35, 41, 73, 0.16),
+    0 3px 0 var(--night),
+    0 6px 12px -3px rgba(35, 41, 73, 0.35);
   transition:
     transform 0.14s var(--ease),
     box-shadow 0.14s ease,
@@ -1213,18 +1403,18 @@ body {
   transform: translateY(-3px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -2px 3px rgba(120, 90, 50, 0.16),
-    0 5px 0 var(--wood-2),
-    0 10px 18px -4px rgba(35, 28, 26, 0.4);
+    inset 0 -2px 3px rgba(35, 41, 73, 0.16),
+    0 5px 0 var(--night),
+    0 10px 18px -4px rgba(35, 41, 73, 0.4);
 }
 /* Travels the full height of its own side wall: the cube lands on the table. */
 .dice:active:not(:disabled) {
   transform: translateY(3px);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 2px 5px rgba(120, 90, 50, 0.26),
-    0 0 0 var(--wood-2),
-    0 1px 3px rgba(35, 28, 26, 0.3);
+    inset 0 2px 5px rgba(35, 41, 73, 0.26),
+    0 0 0 var(--night),
+    0 1px 3px rgba(35, 41, 73, 0.3);
   animation: none;
 }
 .dice:focus-visible {
@@ -1245,9 +1435,9 @@ body {
   filter: saturate(0.8) brightness(0.93);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1px 2px rgba(120, 90, 50, 0.14),
-    0 1px 0 var(--wood-2),
-    0 2px 5px -1px rgba(35, 28, 26, 0.25);
+    inset 0 -1px 2px rgba(35, 41, 73, 0.14),
+    0 1px 0 var(--night),
+    0 2px 5px -1px rgba(35, 41, 73, 0.25);
   transform: translateY(2px);
 }
 .dice.rolling {
@@ -1283,7 +1473,7 @@ body {
    a catch of light on the lower one, which is the inverse of the lighting on
    the cube itself. */
 .dice-face .pip.on {
-  background: radial-gradient(circle at 36% 32%, #4a3a30 0%, #231c1a 70%);
+  background: radial-gradient(circle at 36% 32%, #3c4575 0%, #1a1f3a 70%);
   box-shadow:
     inset 0 1px 1.5px rgba(0, 0, 0, 0.8),
     0 1px 0 rgba(255, 255, 255, 0.75);
@@ -1342,6 +1532,59 @@ body {
 }
 
 /* --- victory ------------------------------------------------------------- */
+/*
+ * THE NIGHT SKY -- the only dark surface in the app.
+ *
+ * The file header rules out a dark scheme, and that still holds: a dark app
+ * reads as a betting app to a parent. This is the exception that proves it,
+ * because you cannot reach this screen without finishing a match. Darkness
+ * here is a reward, not a setting.
+ *
+ * The stage REDEFINES the surface and ink tokens for its own subtree. Every
+ * component inside -- standings, XP tally, reaction bar, buttons -- goes on
+ * reading var(--card) and var(--ink) exactly as it does on a light screen
+ * and renders correctly without a single dark-specific override. That is the
+ * whole reason the victory markup is wrapped rather than restyled piece by
+ * piece: a new component dropped in here needs no extra CSS.
+ */
+.victory-stage {
+  /* Surfaces, re-pointed. */
+  --card: #2b3358;
+  --paper: #232949;
+  --paper-2: #323b63;
+  --rule: #3f4a7a;
+
+  /* Ink, inverted. */
+  --ink: #ffffff;
+  --ink-2: #b9bdd9;
+  --ink-3: #8d93b8;
+
+  /* On a dark ground the marigold no longer needs ink on it for contrast --
+     and dark-on-marigold stays the correct pairing, so only the edge tone
+     has to deepen to stay visible against the night. */
+  --accent-edge: #a97300;
+
+  /* The XP purple at full saturation sits too close to the indigo ground to
+     read. Lifted toward lavender, where it stays recognisably the
+     progression colour and clears contrast on the night. */
+  --xp: #c4b0ff;
+  --xp-sf: #3b3a6e;
+
+  /* Shadows go black rather than indigo-tinted: an indigo shadow on an
+     indigo ground is invisible. */
+  --lift-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+  --lift-2: 0 2px 4px rgba(0, 0, 0, 0.32), 0 8px 20px -6px rgba(0, 0, 0, 0.45);
+  --lift-3: 0 4px 8px rgba(0, 0, 0, 0.36), 0 16px 34px -10px rgba(0, 0, 0, 0.5);
+  --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+
+  margin: -4px -20px 0;
+  padding: 26px 20px 22px;
+  background: linear-gradient(175deg, #232949 0%, #2d3560 58%, #3a4379 100%);
+  color: var(--ink);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--lift-3);
+}
+
 .confetti {
   position: fixed;
   inset: 0;
@@ -1375,7 +1618,7 @@ body {
   box-shadow:
     inset 0 3px 6px rgba(255, 255, 255, 0.4),
     inset 0 -5px 10px rgba(0, 0, 0, 0.22),
-    0 10px 24px -6px rgba(35, 28, 26, 0.45);
+    0 10px 24px -6px rgba(35, 41, 73, 0.45);
   overflow: hidden;
   animation: crestDrop 0.78s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
@@ -1520,7 +1763,7 @@ body {
   background: var(--paper-2);
   overflow: hidden;
   margin-top: 13px;
-  box-shadow: inset 0 1px 2px rgba(35, 28, 26, 0.12);
+  box-shadow: inset 0 1px 2px rgba(35, 41, 73, 0.12);
 }
 
 .xptally-bar span {
@@ -1548,9 +1791,9 @@ body {
 }
 .victory-title {
   font-family: var(--display);
-  font-size: 28px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
   margin: 0 0 8px;
   text-wrap: balance;
 }
@@ -2024,10 +2267,10 @@ body {
   font: 900 clamp(52px, 17vw, 86px) / 0.92 var(--display);
   letter-spacing: -0.02em;
   color: var(--seat);
-  -webkit-text-stroke: 2px color-mix(in srgb, var(--seat) 55%, #2a211d);
+  -webkit-text-stroke: 2px color-mix(in srgb, var(--seat) 55%, #232949);
   text-shadow:
-    0 5px 0 color-mix(in srgb, var(--seat) 50%, #2a211d),
-    0 9px 16px rgba(42, 33, 29, 0.28),
+    0 5px 0 color-mix(in srgb, var(--seat) 50%, #232949),
+    0 9px 16px rgba(35, 41, 73, 0.28),
     0 0 26px color-mix(in srgb, var(--seat) 40%, transparent);
   animation: letterPop 0.62s cubic-bezier(0.3, 1.5, 0.5, 1) both;
 }
@@ -2090,7 +2333,7 @@ body {
   border: 1px solid var(--rule);
   box-shadow:
     0 14px 0 var(--wood-2),
-    0 26px 34px -12px rgba(42, 33, 29, 0.4),
+    0 26px 34px -12px rgba(35, 41, 73, 0.4),
     var(--sheen);
 }
 
@@ -2120,7 +2363,7 @@ body {
       var(--red) 270deg 360deg
     );
   border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(42, 33, 29, 0.3);
+  box-shadow: 0 2px 6px rgba(35, 41, 73, 0.3);
 }
 
 .hero-pawns {
@@ -2137,7 +2380,7 @@ body {
 .hero-pawn {
   width: 34%;
   max-width: 54px;
-  filter: drop-shadow(0 6px 8px rgba(42, 33, 29, 0.3));
+  filter: drop-shadow(0 6px 8px rgba(35, 41, 73, 0.3));
   animation: pawnBounce 2.3s cubic-bezier(0.3, 1.3, 0.5, 1) infinite;
 }
 
@@ -2159,7 +2402,7 @@ body {
 
 .hero-die {
   width: 100%;
-  filter: drop-shadow(0 8px 12px rgba(42, 33, 29, 0.4));
+  filter: drop-shadow(0 8px 12px rgba(35, 41, 73, 0.4));
 }
 
 @keyframes dieTumble {
@@ -2225,14 +2468,14 @@ body {
   border: 0;
   border-radius: 999px;
   font: 800 19px/1 var(--display);
-  color: #3a2a05;
+  color: var(--accent-in);
   cursor: pointer;
-  background: linear-gradient(180deg, #ffd34d 0%, var(--yellow) 56%, #e09a07 100%);
+  background: linear-gradient(180deg, #ffd166 0%, var(--accent) 56%, #eda400 100%);
   /* A solid lower edge plus a shadow: the button has a side, so pressing
      it can travel that side's height and read as a real press. */
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.85),
-    0 6px 0 #b87c06,
+    0 6px 0 var(--accent-edge),
     0 14px 22px -8px rgba(184, 124, 6, 0.6);
   transition: transform 140ms var(--ease), box-shadow 140ms var(--ease-out);
   animation: ctaPulse 2.8s ease-in-out infinite;
@@ -2242,7 +2485,7 @@ body {
   transform: translateY(-2px);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.85),
-    0 8px 0 #b87c06,
+    0 8px 0 var(--accent-edge),
     0 18px 28px -8px rgba(184, 124, 6, 0.65);
 }
 
@@ -2250,7 +2493,7 @@ body {
   transform: translateY(6px);
   box-shadow:
     inset 0 2px 0 rgba(255, 255, 255, 0.7),
-    0 0 0 #b87c06,
+    0 0 0 var(--accent-edge),
     0 2px 6px rgba(184, 124, 6, 0.5);
   animation: none;
 }
@@ -2553,7 +2796,7 @@ body {
   display: grid;
   place-items: center;
   padding: 20px;
-  background: rgba(42, 33, 29, 0.45);
+  background: rgba(35, 41, 73, 0.45);
   backdrop-filter: blur(4px);
   animation: fadeIn 220ms ease both;
 }
@@ -2802,7 +3045,7 @@ body {
 }
 
 .unlock-req.met {
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 
 /* ========================================================================== */
@@ -2936,6 +3179,30 @@ body {
   pointer-events: none;
 }
 
+/*
+ * The woven ribbon along the hero's foot.
+ *
+ * The same band that marks the ticket in the lobby, so the two most shared
+ * surfaces in the app carry one motif -- a nod to the cloth boards Pachisi
+ * was played on. On the foot rather than the head because the hero's own
+ * top edge already carries the token dots.
+ */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: auto -1px -1px;
+  height: 7px;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: repeating-linear-gradient(
+    90deg,
+    var(--red) 0 36px,
+    var(--green) 36px 72px,
+    var(--yellow) 72px 108px,
+    var(--blue) 108px 144px
+  );
+  pointer-events: none;
+}
+
 .hero > * {
   position: relative;
 }
@@ -2984,13 +3251,28 @@ body {
     border-color 140ms linear;
 }
 
+/*
+ * The primary button is a stamped token, not a floating card.
+ *
+ * A 4px solid lower edge in the accent's own shadow tone gives the button a
+ * SIDE. Pressing travels exactly that height and removes the edge, so the
+ * button arrives flat on the page -- the same construction as the die and
+ * the hero call to action, so every pressable object in the app is built the
+ * same way and feels like it came out of the same box.
+ */
 .btn-primary {
-  box-shadow: var(--lift-2), var(--sheen);
+  box-shadow:
+    var(--sheen),
+    0 4px 0 var(--accent-edge),
+    0 10px 18px -8px rgba(184, 124, 6, 0.5);
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--lift-3), var(--sheen);
+  box-shadow:
+    var(--sheen),
+    0 6px 0 var(--accent-edge),
+    0 14px 24px -8px rgba(184, 124, 6, 0.55);
 }
 
 .btn:active:not(:disabled) {
@@ -2998,7 +3280,20 @@ body {
   box-shadow: var(--lift-1);
 }
 
+/*
+ * Travels the full height of its own edge, then lands.
+ *
+ * Must come AFTER `.btn:active` above: both selectors have the same
+ * specificity, so source order is what decides, and the generic 1px nudge
+ * would otherwise cancel this 4px travel.
+ */
+.btn-primary:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: var(--sheen), 0 0 0 var(--accent-edge), 0 1px 4px rgba(184, 124, 6, 0.45);
+}
+
 .btn-ghost {
+  background: var(--card);
   box-shadow: var(--lift-1);
 }
 
@@ -3029,8 +3324,10 @@ body {
   box-shadow: var(--sheen);
 }
 
+/* On marigold a translucent white wash is nearly invisible; a solid light
+   well reads as a distinct inset tile the way it does on the ghost buttons. */
 .btn-primary .btn-rich-icon {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.55);
 }
 
 .btn-rich-text {
@@ -3065,7 +3362,19 @@ body {
   box-shadow: var(--lift-2), var(--sheen);
 }
 
-.avatar {
+/*
+ * The player card's avatar button -- SCOPED, deliberately.
+ *
+ * Unscoped, this rule also hit the lobby's seat avatars, which are a
+ * different component: 32px seat-coloured discs showing an initial. It won
+ * on source order and repainted every one of them as a 52px pale square, so
+ * a lobby of four players showed four identical beige tiles and the seat
+ * colour -- the thing that tells you which player is which -- was gone.
+ *
+ * Scoping to .playercard keeps this the profile button it was written to be
+ * and gives the seat avatars back to the rule at the top of the file.
+ */
+.playercard .avatar {
   flex: none;
   width: 52px;
   height: 52px;
@@ -3082,11 +3391,11 @@ body {
   padding: 0;
 }
 
-.avatar:hover {
+.playercard .avatar:hover {
   transform: scale(1.06) rotate(-3deg);
 }
 
-.avatar:active {
+.playercard .avatar:active {
   transform: scale(0.96);
 }
 
@@ -3125,7 +3434,7 @@ body {
   border-radius: 999px;
   background: var(--paper-2);
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(35, 28, 26, 0.12);
+  box-shadow: inset 0 1px 2px rgba(35, 41, 73, 0.12);
 }
 
 .xpbar-fill {
@@ -3439,7 +3748,7 @@ button.mission-xp:hover {
   position: fixed;
   inset: 0;
   z-index: 70;
-  background: rgba(35, 28, 26, 0.42);
+  background: rgba(35, 41, 73, 0.42);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: flex-end;
@@ -3682,7 +3991,7 @@ button.mission-xp:hover {
   border: 0;
   padding: 0;
   font: 600 12.5px/1 var(--body);
-  color: var(--accent);
+  color: var(--accent-ink);
   cursor: pointer;
   text-decoration: underline;
   text-underline-offset: 3px;

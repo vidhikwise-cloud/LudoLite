@@ -111,15 +111,28 @@ export function App() {
     };
   }, []);
 
+  /**
+   * Did the config request fail. Distinct from `error`, which is a message
+   * the player may dismiss or which may be overwritten by a later action.
+   */
+  const [configFailed, setConfigFailed] = useState(false);
+
   // Config drives every payment decision in the UI, so it is fetched before
   // anything renders and never cached across reloads.
+  //
+  // A failure here used to leave `config` null forever, and the gate below
+  // renders a bare spinner while it is null -- so an unreachable server gave
+  // a screen that span and never said anything. It now falls through to an
+  // offline mode, which is honest about what is wrong and still lets the
+  // player play the computer.
   useEffect(() => {
     api
       .fetchConfig()
-      .then(setConfig)
-      .catch(() =>
-        setError('Could not reach the server. Check your connection and reload.'),
-      );
+      .then((c) => {
+        setConfig(c);
+        setConfigFailed(false);
+      })
+      .catch(() => setConfigFailed(true));
   }, []);
 
   // A code in the URL (from an invite link) opens the join screen prefilled.
@@ -503,6 +516,47 @@ export function App() {
     } finally {
       setBusy(false);
     }
+  }
+
+  /*
+   * Server unreachable.
+   *
+   * Every mode needs the server, including the computer one: `createRoom`
+   * deals the match server-side so that one implementation of the rules
+   * covers both platforms. So this screen does NOT offer offline play --
+   * a button that promised a local game and then failed would be worse
+   * than no button.
+   *
+   * What it does instead is say what is wrong and let the player retry.
+   * That is still a large improvement on what this path used to do, which
+   * was render a spinner that never resolved, because `fetch` has no
+   * timeout and the gate below renders a bare spinner while config is null.
+   *
+   * No payment UI is rendered here. `config` is null, so there is nothing
+   * that could claim a price exists.
+   */
+  if (!config && configFailed) {
+    return (
+      <div className="shell" data-theme={progress.theme}>
+        <BrandBar />
+        <div className="notice n-warn">
+          <span>
+            <b>Can’t reach the server</b>
+            LudoLite needs a connection to deal a match. Check your internet and
+            try again.
+          </span>
+        </div>
+        <div className="btn-stack">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => window.location.reload()}
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
   }
 
   if (!config) {

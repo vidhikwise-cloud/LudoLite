@@ -107,16 +107,52 @@ export function storeToken(token: string): void {
   localStorage.setItem(TOKEN_STORAGE, token);
 }
 
+/**
+ * How long to wait for the server before giving up.
+ *
+ * `fetch` has NO timeout of its own. A server that accepts the TCP
+ * connection and then never answers -- a suspended host, a crashed process
+ * behind a live router, a captive portal -- leaves the promise pending
+ * forever. On the packaged Android app that surfaced as a spinner that
+ * never resolved and no error, because the screen waiting on /config has
+ * nothing to show until the request settles one way or the other.
+ *
+ * Generous, because a cold start on a free host genuinely can take ~50s.
+ * The point is not to be quick, it is to be finite.
+ */
+const REQUEST_TIMEOUT_MS = 60_000;
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = storedToken();
-  const response = await fetch(`${API_BASE}/api${path}`, {
-    ...init,
-    headers: {
-      'content-type': 'application/json',
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
-      ...init.headers,
-    },
-  });
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/api${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+        ...init.headers,
+      },
+    });
+  } catch (cause) {
+    // An abort and a DNS/TLS failure are the same thing to the player: the
+    // server is not answering. Both become a normal ApiRequestError so no
+    // caller has to special-case a raw TypeError or AbortError.
+    throw new ApiRequestError(0, {
+      code: 'INTERNAL_ERROR',
+      message:
+        cause instanceof Error && cause.name === 'AbortError'
+          ? 'The server took too long to answer.'
+          : 'The server could not be reached.',
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!response.ok) {
     let body: ApiErrorBody;
